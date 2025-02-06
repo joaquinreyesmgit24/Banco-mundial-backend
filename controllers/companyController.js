@@ -1,16 +1,73 @@
 import { check, validationResult } from 'express-validator'
 import {Company, SampleSize, SampleSector, Panel} from '../models/index.js'
 
-const create = async (req,res)=>{
+const createCompany = async (req,res)=>{
     try{
         await check('code').notEmpty().withMessage('El id de la empresa no puede estar vacio').run(req)
         await check('name').notEmpty().withMessage('El nombre de la empresa no puede estar vacio').run(req)
         await check('sampleLocation').notEmpty().withMessage('La ubicación de la muestra no pueda estar vacia').run(req)
-        await check('floorNumber').notEmpty().withMessage('El id de la empresa no puede ir vacio').run(req)
-        await check('street').notEmpty().withMessage('El id de la empresa no puede ir vacio').run(req)
-        await check('city').notEmpty().withMessage('El id de la empresa no puede ir vacio').run(req)
-        await check('state').notEmpty().withMessage('El id de la empresa no puede ir vacio').run(req)
-        await check('phoneNumberOne').notEmpty().withMessage('El id de la empresa no puede ir vacio').run(req)
+        await check('floorNumber').notEmpty().withMessage('El número de casa/piso/puerta de la empresa no puede ir vacio').run(req)
+        await check('street').notEmpty().withMessage('La calle de la empresa no puede ir vacio').run(req)
+        await check('city').notEmpty().withMessage('La ciudad de la empresa no puede ir vacio').run(req)
+        await check('state').notEmpty().withMessage('El estado de la empresa no puede ir vacio').run(req)
+        await check('phoneNumberOne').notEmpty().withMessage('El número uno de la empresa no puede ir vacio').run(req)
+        await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').run(req)
+        await check('emailAddress').notEmpty().withMessage('El correo de la empresa no puede ir vacio').run(req)
+
+        let result = validationResult(req)
+        if (!result.isEmpty()) {
+            return res.status(400).json({ errors: result.array() })
+        }
+        console.log(req.body)
+        const { code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId} = req.body;
+        const companyExists = await Company.findOne({ where: { code } })
+        if (companyExists) {
+            return res.status(400).json({ error: 'La empresa ya existe' });
+        }
+        if(!sampleSectorId){
+            return res.status(400).json({ error: 'Debe seleccionar un sector de la muestra válido' });
+        }
+        if(!sampleSizeId){
+            return res.status(400).json({ error: 'Debe seleccionar un tamaño de la muestra válido' });
+        } 
+        if(!panelId){
+            return res.status(400).json({ error: 'Debe seleccionar un panel válido' });
+        } 
+        const company = await Company.create( {code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId} );
+        const companies = await Company.findAll({
+            include: [
+                {
+                    model: SampleSize,
+                    required: true
+                },
+                {
+                    model: SampleSector,
+                    required: true
+                },
+                {
+                    model: Panel,
+                    required: true
+                }
+            ]
+        });
+        console.log(companies)
+        res.status(200).json({msg: 'Empresa creado correctamente', company, companies })
+
+    }catch(error){
+        res.status(500).json({ error: 'Error al crear la empresa'})
+    }
+}
+
+const updateCompany  = async (req,res)=>{
+    try{
+        await check('code').notEmpty().withMessage('El id de la empresa no puede estar vacio').run(req)
+        await check('name').notEmpty().withMessage('El nombre de la empresa no puede estar vacio').run(req)
+        await check('sampleLocation').notEmpty().withMessage('La ubicación de la muestra no pueda estar vacia').run(req)
+        await check('floorNumber').notEmpty().withMessage('El número de casa/piso/puerta de la empresa no puede ir vacio').run(req)
+        await check('street').notEmpty().withMessage('La calle de la empresa no puede ir vacio').run(req)
+        await check('city').notEmpty().withMessage('La ciudad de la empresa no puede ir vacio').run(req)
+        await check('state').notEmpty().withMessage('El estado de la empresa no puede ir vacio').run(req)
+        await check('phoneNumberOne').notEmpty().withMessage('El número uno de la empresa no puede ir vacio').run(req)
         await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').run(req)
         await check('emailAdress').notEmpty().withMessage('El correo de la empresa no puede ir vacio').run(req)
 
@@ -18,21 +75,110 @@ const create = async (req,res)=>{
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() })
         }
-        const { code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAdress, panelId} = req.body;
-        const companyExists = await Company.findOne({ where: { code } })
-        if (companyExists) {
-            return res.status(400).json({ error: 'La empresa ya existe' });
+        const { code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAdress, sampleSectorId, sampleSizeId, panelId} = req.body;
+        const company = await Company.findOne({ where: { code } })
+        if (!company) {
+            return res.status(400).json({ error: 'La empresa a actualizar no existe' });
         }
-        const company = await Company.create( { code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAdress, panelId} );
-        const companies = await company.findAll({
-            include: Role,
-            required:true
-            });
-        res.status(200).json({msg: 'Usuario creado correctamente', user, users })
+        if(sampleSectorId){
+            return res.status(400).json({ error: 'Debe seleccionar un sector de la muestra válido' });
+        }
+        if(sampleSizeId){
+            return res.status(400).json({ error: 'Debe seleccionar un tamaño de la muestra válido' });
+        } 
+        if(panelId){
+            return res.status(400).json({ error: 'Debe seleccionar un panel válido' });
+        }
+
+        company.code=code
+        company.name=name
+        company.sampleLocation=sampleLocation
+        company.floorNumber=floorNumber
+        company.street=street
+        company.city=city
+        company.state=state
+        company.phoneNumberOne=phoneNumberOne
+        company.phoneNumberSecond=phoneNumberSecond
+        company.faxNumber=faxNumber
+        company.preferenceNumber=preferenceNumber
+        company.emailAdress=emailAdress
+        company.sampleSectorId=sampleSectorId
+        company.sampleSizeId=sampleSizeId
+        company.panelId=panelId
+
+        await company.save();
+
+        const companies = await company.findAll([
+            {
+                include: SampleSize,
+                required:true
+            },
+            {
+                include: SampleSector,
+                required:true
+            },
+            {
+                include: Panel,
+                required:true
+            },
+        ]);
+        res.status(200).json({msg: 'Empresa actualizada correctamente', user, users })
 
     }catch(error){
-        res.status(500).json({ error: 'Error al crear la empresa'})
+        res.status(500).json({ error: 'Error al actualizar la empresa'})
     }
+}
+const listCompanies = async (req, res) => {
+    try {
+        const companies = await Company.findAll(
+            {
+                include: SampleSize,
+                required:true
+            },
+            {
+                include: SampleSector,
+                required:true
+            },
+            {
+                include: Panel,
+                required:true
+            },
+        );
+        res.status(200).json({ companies });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al listar las empresas' });
+    }
+}
+const listPanels = async (req, res) => {
+    try {
+        const panels = await Panel.findAll();
+        res.status(200).json({ panels });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al listar los paneles' });
+    }
+}
+const listSampleSectors = async (req, res) => {
+    try {
+        const sampleSectors = await SampleSector.findAll();
+        res.status(200).json({ sampleSectors });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al listar los sectores de la muestra' });
+    }
+}
+const listSampleSizes = async (req, res) => {
+    try {
+        const sampleSizes = await SampleSize.findAll();
+        res.status(200).json({ sampleSizes });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al listar los tamaños de la muestra' });
+    }
+}
 
-
+export{
+    createCompany,
+    updateCompany,
+    listCompanies,
+    listPanels,
+    listSampleSectors,
+    listSampleSizes
 }

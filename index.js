@@ -3,6 +3,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import userRoutes from './routes/userRoutes.js';
+import companyRoutes from './routes/companyRoutes.js'
 import db from './config/db.js';
 
 //create application
@@ -24,6 +25,7 @@ try{
     console.log(e)
 }
 app.use('/auth', userRoutes)
+app.use('/company',companyRoutes)
 
 
 const port = 3000;

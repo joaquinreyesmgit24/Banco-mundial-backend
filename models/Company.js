@@ -46,7 +46,7 @@ const Company = db.define('companies',{
         type:DataTypes.INTEGER,
         allowNull:false
     },
-    emailAdress:{
+    emailAddress:{
         type:DataTypes.STRING,
         allowNull:false
     }

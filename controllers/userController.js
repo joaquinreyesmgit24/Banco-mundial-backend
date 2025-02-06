@@ -109,7 +109,7 @@ const authenticate = async (req, res) => {
             httpOnly: true,
         }).status(200).json({ user: { id: user.id, username: user.username, role: { id: user.role.id, name: user.role.name }, token: token, imgUrl:user.imgUrl } })
     } catch (error) {
-         res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
 }
 const updateUser = async (req, res) => {

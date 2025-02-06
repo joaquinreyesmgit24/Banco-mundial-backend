@@ -24,5 +24,7 @@ export{
     Role,
     Panel,
     Company,
-    Sequelize
+    Sequelize,
+    SampleSector,
+    SampleSize
 }
