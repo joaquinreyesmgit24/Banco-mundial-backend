@@ -18,7 +18,6 @@ const createCompany = async (req,res)=>{
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() })
         }
-        console.log(req.body)
         const { code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId} = req.body;
         const companyExists = await Company.findOne({ where: { code } })
         if (companyExists) {
@@ -50,7 +49,6 @@ const createCompany = async (req,res)=>{
                 }
             ]
         });
-        console.log(companies)
         res.status(200).json({msg: 'Empresa creado correctamente', company, companies })
 
     }catch(error){
@@ -69,24 +67,24 @@ const updateCompany  = async (req,res)=>{
         await check('state').notEmpty().withMessage('El estado de la empresa no puede ir vacio').run(req)
         await check('phoneNumberOne').notEmpty().withMessage('El número uno de la empresa no puede ir vacio').run(req)
         await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').run(req)
-        await check('emailAdress').notEmpty().withMessage('El correo de la empresa no puede ir vacio').run(req)
+        await check('emailAddress').notEmpty().withMessage('El correo de la empresa no puede ir vacio').run(req)
 
         let result = validationResult(req)
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() })
         }
-        const { code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAdress, sampleSectorId, sampleSizeId, panelId} = req.body;
+        const { code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId} = req.body;
         const company = await Company.findOne({ where: { code } })
         if (!company) {
             return res.status(400).json({ error: 'La empresa a actualizar no existe' });
         }
-        if(sampleSectorId){
+        if(!sampleSectorId){
             return res.status(400).json({ error: 'Debe seleccionar un sector de la muestra válido' });
         }
-        if(sampleSizeId){
+        if(!sampleSizeId){
             return res.status(400).json({ error: 'Debe seleccionar un tamaño de la muestra válido' });
         } 
-        if(panelId){
+        if(!panelId){
             return res.status(400).json({ error: 'Debe seleccionar un panel válido' });
         }
 
@@ -101,28 +99,30 @@ const updateCompany  = async (req,res)=>{
         company.phoneNumberSecond=phoneNumberSecond
         company.faxNumber=faxNumber
         company.preferenceNumber=preferenceNumber
-        company.emailAdress=emailAdress
+        company.emailAdress=emailAddress
         company.sampleSectorId=sampleSectorId
         company.sampleSizeId=sampleSizeId
         company.panelId=panelId
 
         await company.save();
 
-        const companies = await company.findAll([
-            {
-                include: SampleSize,
-                required:true
-            },
-            {
-                include: SampleSector,
-                required:true
-            },
-            {
-                include: Panel,
-                required:true
-            },
-        ]);
-        res.status(200).json({msg: 'Empresa actualizada correctamente', user, users })
+        const companies = await Company.findAll({
+            include: [
+                {
+                    model: SampleSize,
+                    required: true
+                },
+                {
+                    model: SampleSector,
+                    required: true
+                },
+                {
+                    model: Panel,
+                    required: true
+                }
+            ]
+        });
+        res.status(200).json({msg: 'Empresa actualizada correctamente', company, companies })
 
     }catch(error){
         res.status(500).json({ error: 'Error al actualizar la empresa'})
@@ -173,6 +173,33 @@ const listSampleSizes = async (req, res) => {
         res.status(500).json({ error: 'Error al listar los tamaños de la muestra' });
     }
 }
+const deleteCompany = async (req,res)=>{
+    try{
+        const {companyId} = req.params;
+        const company = await Company.findOne({ where: { id:companyId } })
+        if (!company) {
+            return res.status(400).json({ error: 'La empresa no existe' });
+        }
+        await company.destroy()
+        const companies = await Company.findAll(
+            {
+                include: SampleSize,
+                required:true
+            },
+            {
+                include: SampleSector,
+                required:true
+            },
+            {
+                include: Panel,
+                required:true
+            },
+        );
+        res.status(200).json({ msg: 'Empresa eliminada correctamente', company, companies })
+    } catch(error){
+        res.status(500).json({ error: 'Error al eliminar la empresa' });
+    }
+}
 
 export{
     createCompany,
@@ -180,5 +207,6 @@ export{
     listCompanies,
     listPanels,
     listSampleSectors,
-    listSampleSizes
+    listSampleSizes,
+    deleteCompany
 }

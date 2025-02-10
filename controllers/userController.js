@@ -205,7 +205,7 @@ const deleteUser = async (req,res)=>{
         });
         res.status(200).json({ msg: 'Usuario eliminado correctamente', user, users })
     } catch(error){
-        res.status(500).json({ error: 'Error al listar los roles' });
+        res.status(500).json({ error: 'Error al eliminar al usuario' });
     }
 }
 
