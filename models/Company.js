@@ -49,7 +49,12 @@ const Company = db.define('companies',{
     emailAddress:{
         type:DataTypes.STRING,
         allowNull:false
-    }
+    },
+    use:{
+        type:DataTypes.BOOLEAN,
+        allowNull:false
+    },
+   
 })
 
 export default Company

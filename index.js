@@ -4,6 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import userRoutes from './routes/userRoutes.js';
 import companyRoutes from './routes/companyRoutes.js'
+import callRoutes from './routes/callRoutes.js'
 import db from './config/db.js';
 
 //create application
@@ -26,6 +27,7 @@ try{
 }
 app.use('/auth', userRoutes)
 app.use('/company',companyRoutes)
+app.use('/call',callRoutes)
 
 
 const port = 3000;

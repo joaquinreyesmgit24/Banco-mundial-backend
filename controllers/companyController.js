@@ -32,7 +32,7 @@ const createCompany = async (req,res)=>{
         if(!panelId){
             return res.status(400).json({ error: 'Debe seleccionar un panel válido' });
         } 
-        const company = await Company.create( {code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId} );
+        const company = await Company.create( {code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId, use:false} );
         const companies = await Company.findAll({
             include: [
                 {
@@ -49,7 +49,7 @@ const createCompany = async (req,res)=>{
                 }
             ]
         });
-        res.status(200).json({msg: 'Empresa creado correctamente', company, companies })
+        res.status(200).json({msg: 'Empresa creada correctamente', company, companies })
 
     }catch(error){
         res.status(500).json({ error: 'Error al crear la empresa'})
@@ -200,6 +200,38 @@ const deleteCompany = async (req,res)=>{
         res.status(500).json({ error: 'Error al eliminar la empresa' });
     }
 }
+const getRandomEmpresa = async(req,res)=>{
+    const {userId} = req.params
+    try {
+        const randomAssignedCompany = await Company.findOne({
+          where: { assignedId: userId, use: true },
+          order: Sequelize.literal('RAND()'),
+        });
+    
+        if (randomAssignedCompany) {
+          return res.json(empresaAsignada);
+        }
+    
+        const newCompany = await Company.findOne({
+          where: { use: false, assignedId: null },
+          order: Sequelize.literal('RAND()'),
+        });
+    
+        if (!newCompany) {
+          return res.status(404).json({ message: 'No hay empresas disponibles.' });
+        }
+    
+        // Asignar la empresa al encuestador y marcarla como en uso
+        newCompany.assignedId = userId;
+        newCompany.use = true;
+        await newCompany.save();
+    
+        res.json(newCompany);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al obtener la empresa.' });
+      }
+}
 
 export{
     createCompany,
@@ -208,5 +240,6 @@ export{
     listPanels,
     listSampleSectors,
     listSampleSizes,
-    deleteCompany
+    deleteCompany,
+    getRandomEmpresa
 }
