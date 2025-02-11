@@ -1,9 +1,10 @@
 import { check, validationResult } from 'express-validator'
-import {Company, SampleSize, SampleSector, Panel} from '../models/index.js'
+import {Company, SampleSize, SampleSector, Panel, Sequelize} from '../models/index.js'
 
 const createCompany = async (req,res)=>{
     try{
         await check('code').notEmpty().withMessage('El id de la empresa no puede estar vacio').run(req)
+        await check('rut').notEmpty().withMessage('El rut de la empresa no puede estar vacio').run(req)
         await check('name').notEmpty().withMessage('El nombre de la empresa no puede estar vacio').run(req)
         await check('sampleLocation').notEmpty().withMessage('La ubicación de la muestra no pueda estar vacia').run(req)
         await check('floorNumber').notEmpty().withMessage('El número de casa/piso/puerta de la empresa no puede ir vacio').run(req)
@@ -18,11 +19,20 @@ const createCompany = async (req,res)=>{
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() })
         }
-        const { code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId} = req.body;
-        const companyExists = await Company.findOne({ where: { code } })
+        const { code,rut, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId} = req.body;
+        const companyExists = await Company.findOne({
+            where: {
+            [Sequelize.Op.or]: [
+                { code: code },  
+                { rut: rut }           
+            ]
+            }
+        });
+        
         if (companyExists) {
             return res.status(400).json({ error: 'La empresa ya existe' });
         }
+
         if(!sampleSectorId){
             return res.status(400).json({ error: 'Debe seleccionar un sector de la muestra válido' });
         }
@@ -32,7 +42,7 @@ const createCompany = async (req,res)=>{
         if(!panelId){
             return res.status(400).json({ error: 'Debe seleccionar un panel válido' });
         } 
-        const company = await Company.create( {code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId, use:false} );
+        const company = await Company.create( {code,rut, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId, use:false} );
         const companies = await Company.findAll({
             include: [
                 {
@@ -59,6 +69,7 @@ const createCompany = async (req,res)=>{
 const updateCompany  = async (req,res)=>{
     try{
         await check('code').notEmpty().withMessage('El id de la empresa no puede estar vacio').run(req)
+        await check('rut').notEmpty().withMessage('El rut de la empresa no puede estar vacio').run(req)
         await check('name').notEmpty().withMessage('El nombre de la empresa no puede estar vacio').run(req)
         await check('sampleLocation').notEmpty().withMessage('La ubicación de la muestra no pueda estar vacia').run(req)
         await check('floorNumber').notEmpty().withMessage('El número de casa/piso/puerta de la empresa no puede ir vacio').run(req)
@@ -73,7 +84,7 @@ const updateCompany  = async (req,res)=>{
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() })
         }
-        const { code, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId} = req.body;
+        const { code,rut, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId} = req.body;
         const company = await Company.findOne({ where: { code } })
         if (!company) {
             return res.status(400).json({ error: 'La empresa a actualizar no existe' });
@@ -89,6 +100,7 @@ const updateCompany  = async (req,res)=>{
         }
 
         company.code=code
+        company.rut = rut
         company.name=name
         company.sampleLocation=sampleLocation
         company.floorNumber=floorNumber
@@ -209,12 +221,12 @@ const getRandomEmpresa = async(req,res)=>{
         });
     
         if (randomAssignedCompany) {
-          return res.json(empresaAsignada);
+          return res.json(randomAssignedCompany);
         }
     
         const newCompany = await Company.findOne({
           where: { use: false, assignedId: null },
-          order: Sequelize.literal('RAND()'),
+        //   order: Sequelize.literal('RAND()'),
         });
     
         if (!newCompany) {
@@ -227,6 +239,7 @@ const getRandomEmpresa = async(req,res)=>{
         await newCompany.save();
     
         res.json(newCompany);
+
       } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al obtener la empresa.' });

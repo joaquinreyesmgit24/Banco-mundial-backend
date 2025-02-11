@@ -7,6 +7,11 @@ const Company = db.define('companies',{
         allowNull:false,
         unique:true
     },
+    rut:{
+        type:DataTypes.STRING,
+        allowNull:false,
+        unique:true
+    },
     name:{
         type:DataTypes.STRING,
         allowNull:false
@@ -54,7 +59,6 @@ const Company = db.define('companies',{
         type:DataTypes.BOOLEAN,
         allowNull:false
     },
-   
 })
 
 export default Company
