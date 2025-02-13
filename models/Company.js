@@ -39,7 +39,15 @@ const Company = db.define('companies',{
         type:DataTypes.INTEGER,
         allowNull:false
     },
+    numberPhoneCallsOne:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
     phoneNumberSecond:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
+    numberPhoneCallSecond:{
         type:DataTypes.INTEGER,
         allowNull:true
     },
@@ -51,6 +59,15 @@ const Company = db.define('companies',{
         type:DataTypes.INTEGER,
         allowNull:false
     },
+    callStartTime:{
+        type:DataTypes.TIME,
+        allowNull:false
+    },
+    callEndTime:{
+        type:DataTypes.TIME,
+        allowNull:false
+    },
+
     emailAddress:{
         type:DataTypes.STRING,
         allowNull:false

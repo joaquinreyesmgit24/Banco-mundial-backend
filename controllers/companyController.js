@@ -11,15 +11,18 @@ const createCompany = async (req,res)=>{
         await check('street').notEmpty().withMessage('La calle de la empresa no puede ir vacio').run(req)
         await check('city').notEmpty().withMessage('La ciudad de la empresa no puede ir vacio').run(req)
         await check('state').notEmpty().withMessage('El estado de la empresa no puede ir vacio').run(req)
-        await check('phoneNumberOne').notEmpty().withMessage('El número uno de la empresa no puede ir vacio').run(req)
+        await check('phoneNumberOne').notEmpty().withMessage('El teléfono uno de la empresa no puede ir vacio').run(req)
         await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').run(req)
         await check('emailAddress').notEmpty().withMessage('El correo de la empresa no puede ir vacio').run(req)
+
 
         let result = validationResult(req)
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() })
         }
-        const { code,rut, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId} = req.body;
+
+        const { code,rut, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne,numberPhoneCallsOne, phoneNumberSecond,numberPhoneCallSecond, faxNumber, preferenceNumber, callStartTime,callEndTime, emailAddress, sampleSectorId, sampleSizeId, panelId} = req.body;
+
         const companyExists = await Company.findOne({
             where: {
             [Sequelize.Op.or]: [
@@ -42,7 +45,7 @@ const createCompany = async (req,res)=>{
         if(!panelId){
             return res.status(400).json({ error: 'Debe seleccionar un panel válido' });
         } 
-        const company = await Company.create( {code,rut, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, phoneNumberSecond, faxNumber, preferenceNumber, emailAddress, sampleSectorId, sampleSizeId, panelId, use:false} );
+        const company = await Company.create( {code,rut, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, numberPhoneCallsOne, phoneNumberSecond, numberPhoneCallSecond, faxNumber, preferenceNumber, callStartTime, callEndTime, emailAddress, sampleSectorId, sampleSizeId, panelId, use:false} );
         const companies = await Company.findAll({
             include: [
                 {
@@ -76,7 +79,7 @@ const updateCompany  = async (req,res)=>{
         await check('street').notEmpty().withMessage('La calle de la empresa no puede ir vacio').run(req)
         await check('city').notEmpty().withMessage('La ciudad de la empresa no puede ir vacio').run(req)
         await check('state').notEmpty().withMessage('El estado de la empresa no puede ir vacio').run(req)
-        await check('phoneNumberOne').notEmpty().withMessage('El número uno de la empresa no puede ir vacio').run(req)
+        await check('phoneNumberOne').notEmpty().withMessage('El teléfono uno de la empresa no puede ir vacio').run(req)
         await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').run(req)
         await check('emailAddress').notEmpty().withMessage('El correo de la empresa no puede ir vacio').run(req)
 
