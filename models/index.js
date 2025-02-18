@@ -7,6 +7,7 @@ import Company from './Company.js'
 import Sequelize  from 'sequelize'
 import Call from './Call.js'
 import Incidence from './Incidence.js'
+import Quota from './Quota.js'
 
 
 Role.hasMany(User, {foreignKey:'roleId'})
@@ -23,7 +24,8 @@ Incidence.hasMany(Call, {foreignKey: 'incidenceId'})
 Call.belongsTo(Incidence, {foreignKey:'incidenceId'})
 User.hasMany(Company,{foreignKey: 'assignedId'} )
 Company.belongsTo(User,{foreignKey: {name:'assignedId', allowNull:true}} )
-
+SampleSize.hasMany(Quota, {foreignKey: 'sampleSizeId'})
+Quota.belongsTo(SampleSize, {foreignKey:'sampleSizeId'})
 
 
 export{
@@ -35,5 +37,6 @@ export{
     SampleSector,
     SampleSize,
     Call,
-    Incidence
+    Incidence,
+    Quota
 }

@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import userRoutes from './routes/userRoutes.js';
 import companyRoutes from './routes/companyRoutes.js'
 import callRoutes from './routes/callRoutes.js'
+import quotaRoutes from './routes/quotaRoutes.js'
 import db from './config/db.js';
 
 //create application
@@ -26,6 +27,7 @@ try{
     console.log(e)
 }
 app.use('/auth', userRoutes)
+app.use('/quota', quotaRoutes)
 app.use('/company',companyRoutes)
 app.use('/call',callRoutes)
 
