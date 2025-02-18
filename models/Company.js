@@ -47,7 +47,7 @@ const Company = db.define('companies',{
         type:DataTypes.INTEGER,
         allowNull:true
     },
-    numberPhoneCallSecond:{
+    numberPhoneCallsSecond:{
         type:DataTypes.INTEGER,
         allowNull:true
     },
