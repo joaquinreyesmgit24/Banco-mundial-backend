@@ -1,5 +1,7 @@
 import { check, validationResult } from 'express-validator'
-import { Company, SampleSize, SampleSector, Panel, Sequelize } from '../models/index.js'
+import { Company, SampleSize, SampleSector, Panel,Call, Sequelize } from '../models/index.js'
+import moment from 'moment'
+import { Op } from 'sequelize';
 
 const createCompany = async (req, res) => {
     try {
@@ -29,9 +31,8 @@ const createCompany = async (req, res) => {
         let result = validationResult(req)
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() })
-        }
-       
-        const { code, rut, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, numberPhoneCallsOne, phoneNumberSecond, numberPhoneCallsSecond, faxNumber, preferenceNumber, callStartTime, callEndTime, emailAddress, sampleSectorId, sampleSizeId, panelId } = req.body;
+        } 
+        const { code, rut, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, numberPhoneCallsOne, phoneNumberSecond, numberPhoneCallsSecond, faxNumber, preferenceNumber, callStartTime, callEndTime, emailAddress, sampleSectorId, sampleSizeId, panelId} = req.body;
 
         if (callStartTime >= callEndTime) {
             return res.status(400).json({ error: 'La hora de inicio de llamada no puede ser mayor o igual a la hora de término.' });
@@ -243,38 +244,107 @@ const deleteCompany = async (req, res) => {
     }
 }
 const getRandomEmpresa = async (req, res) => {
-    const { userId } = req.params
+    const { userId } = req.params;
     try {
-        const randomAssignedCompany = await Company.findOne({
+        // Función para verificar si una empresa tiene llamadas disponibles
+        const checkCallsAvailability = async (company) => {
+            const todayStart = moment().startOf('day').format('YYYY-MM-DD 00:00:00');
+            const todayEnd = moment().endOf('day').format('YYYY-MM-DD 23:59:59');
+
+            const callsCount = await Call.findAll({
+                where: {
+                    date: { [Op.between]: [todayStart, todayEnd] },
+                    phone: { [Op.in]: [company.phoneNumberOne, company.phoneNumberSecond] },
+                },
+                attributes: [
+                    'phone',
+                    [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalCalls'],
+                ],
+                group: ['phone'],
+                raw: true,
+            });
+
+            const callsByPhone = callsCount.reduce((acc, item) => {
+                acc[item.phone] = item.totalCalls;
+                return acc;
+            }, {});
+
+            const callsMadeOne = callsByPhone[company.phoneNumberOne] || 0;
+            const callsMadeTwo = callsByPhone[company.phoneNumberSecond] || 0;
+
+            // Aquí estamos comprobando si las llamadas realizadas son menores a las permitidas
+            const isPhoneOneAvailable = callsMadeOne < company.numberPhoneCallsOne;
+            const isPhoneTwoAvailable = callsMadeTwo < company.numberPhoneCallsSecond;
+
+            // Ambas condiciones deben ser verdaderas para que la empresa esté disponible
+            return isPhoneOneAvailable || isPhoneTwoAvailable;
+        };
+
+        // Obtener todas las empresas asignadas al usuario con use=true
+        const assignedCompanies = await Company.findAll({
             where: { assignedId: userId, use: true },
-            order: Sequelize.literal('RAND()'),
         });
 
-        if (randomAssignedCompany) {
-            return res.json(randomAssignedCompany);
+        if (assignedCompanies.length > 0) {
+            // Evaluar disponibilidad de llamadas para las empresas asignadas
+            const availabilityResults = await Promise.all(
+                assignedCompanies.map((company) => checkCallsAvailability(company))
+            );
+
+            // Filtrar las empresas que tienen llamadas disponibles
+            const availableAssignedCompanies = assignedCompanies.filter(
+                (_, index) => availabilityResults[index]
+            );
+
+            if (availableAssignedCompanies.length > 0) {
+                // Seleccionar una empresa aleatoria de las disponibles
+                const randomAssignedCompany = availableAssignedCompanies[
+                    Math.floor(Math.random() * availableAssignedCompanies.length)
+                ];
+                console.log(randomAssignedCompany);
+
+                return res.json(randomAssignedCompany);
+            } else {
+                return res.status(404).json({ message: 'No hay empresas asignadas con llamadas disponibles.' });
+            }
         }
 
-        const newCompany = await Company.findOne({
+        // Si no hay empresas asignadas disponibles, buscar nuevas empresas no asignadas
+        const newCompanies = await Company.findAll({
             where: { use: false, assignedId: null },
-            //   order: Sequelize.literal('RAND()'),
         });
 
-        if (!newCompany) {
-            return res.status(404).json({ message: 'No hay empresas disponibles.' });
+        // Evaluar disponibilidad de llamadas para las nuevas empresas
+        const availabilityNewResults = await Promise.all(
+            newCompanies.map((company) => checkCallsAvailability(company))
+        );
+
+        // Filtrar las empresas que tienen llamadas disponibles
+        const availableNewCompanies = newCompanies.filter(
+            (_, index) => availabilityNewResults[index]
+        );
+
+        if (availableNewCompanies.length > 0) {
+            // Seleccionar una empresa aleatoria de las disponibles
+            const randomNewCompany = availableNewCompanies[
+                Math.floor(Math.random() * availableNewCompanies.length)
+            ];
+
+            // Asignar la empresa al encuestador y marcarla como en uso
+            randomNewCompany.assignedId = userId;
+            randomNewCompany.use = true;
+            await randomNewCompany.save();
+
+            return res.json(randomNewCompany);
+        } else {
+            return res.status(404).json({ message: 'No hay empresas disponibles con llamadas.' });
         }
-
-        // Asignar la empresa al encuestador y marcarla como en uso
-        newCompany.assignedId = userId;
-        newCompany.use = true;
-        await newCompany.save();
-
-        res.json(newCompany);
-
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Error al obtener la empresa.' });
+        return res.status(500).json({ error: 'Error al obtener la empresa.' });
     }
-}
+};
+
 
 export {
     createCompany,
