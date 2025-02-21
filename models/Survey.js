@@ -1,0 +1,75 @@
+import { DataTypes } from 'sequelize';
+import db from '../config/db.js'
+
+const Survey = db.define('surveys',{
+    Q_S10:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
+    Q_S8:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
+    Q_S9:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
+    Q_S4:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
+    Q_S7:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
+    Q_A7:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
+    Q_A7A:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
+    Q_A7B:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
+    Q_A11:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
+    Q_A7C:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
+    Q_A7D_address:{
+        type:DataTypes.STRING,
+        allowNull:true
+    },
+    Q_A7D_estab_name:{
+        type:DataTypes.STRING,
+        allowNull:true
+    },
+    Q_A9:{
+        type:DataTypes.INTEGER,
+        allowNull:true
+    },
+    Q_S12_date:{
+        type:DataTypes.DATE,
+        allowNull:true
+    },
+    Q_S12_hour:{
+        type:DataTypes.DATE,
+        allowNull:true
+    },
+    Q_S12_inter_name:{
+        type:DataTypes.STRING,
+        allowNull:true
+    },
+    Q_S12_inter_cargo:{
+        type:DataTypes.STRING,
+        allowNull:true
+    }
+})
+
+export default Survey

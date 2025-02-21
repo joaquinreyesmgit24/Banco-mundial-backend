@@ -8,6 +8,7 @@ import Sequelize  from 'sequelize'
 import Call from './Call.js'
 import Incidence from './Incidence.js'
 import Quota from './Quota.js'
+import Survey from './Survey.js'
 
 
 Role.hasMany(User, {foreignKey:'roleId'})
@@ -38,5 +39,6 @@ export{
     SampleSize,
     Call,
     Incidence,
-    Quota
+    Quota,
+    Survey
 }
