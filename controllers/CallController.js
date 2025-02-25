@@ -104,35 +104,64 @@ const listIncidents = async (req,res)=>{
     }
 }
 
-const listCallsByCompany = async (req,res)=>{
+const listCallsByCompany = async (req, res) => {
     try {
-        const companyId = req.params.companyId;
+        const { companyId } = req.params;
 
         if (!companyId) {
             return res.status(400).json({ error: 'Falta el ID de la compañía' });
         }
 
         const calls = await Call.findAll({
+            where: { companyId }, // Filtra por empresa
             include: [
                 {
                     model: Incidence,
-                    required: true
+                    required: true // Si quieres que las llamadas sin incidencia también aparezcan
                 },
-                
+            ]
+        });
+        res.status(200).json({ calls });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al listar las llamadas' });
+    }
+};
+const deleteCall = async (req,res)=>{
+    try{
+        const {companyId, callId} = req.params;
+        
+        if (!companyId) {
+            return res.status(400).json({ error: 'Falta el ID de la compañía' });
+        }
+        console.log(companyId, callId)
+        const call = await Call.findOne({ where: { id:callId } })
+
+        if (!call) {
+            return res.status(400).json({ error: 'La llamada no existe' });
+        }
+        const deleted =  await call.destroy()
+        console.log(`Registros eliminados: ${deleted}`);
+
+        const calls = await Call.findAll({
+            where: { companyId }, // Filtra por empresa
+            include: [
+                {
+                    model: Incidence,
+                    required: true // Si quieres que las llamadas sin incidencia también aparezcan
+                },
             ]
         });
 
-        if (calls.length === 0) {
-            return res.status(404).json({ message: 'No se encontraron llamadas para esta empresa' });
-        }
-        res.status(200).json({ calls });
-    } catch (error) {
-        res.status(500).json({ error: 'Error al listar las llamadas' });
+        res.status(200).json({ msg: 'Llamada eliminada correctamente', calls })
+    } catch(error){
+        res.status(500).json({ error: 'Error al eliminar al usuario' });
     }
 }
 
 export {
     listIncidents,
     createCall,
-    listCallsByCompany
+    listCallsByCompany,
+    deleteCall
 }
