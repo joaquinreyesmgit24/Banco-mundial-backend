@@ -9,13 +9,18 @@ const createCall = async (req, res) => {
     try {
         await check('phone').notEmpty().withMessage('El teléfono no ha sido seleccionado').run(req);
         await check('date').notEmpty().withMessage('La fecha no es válida').run(req);
+        
 
+        const { phone, comment, date, companyId, incidenceId, rescheduled } = req.body;
+
+        if(incidenceId==3){
+            await check('rescheduled.date').notEmpty().withMessage('La fecha de reprogramación de llamado no puede ir vacía').run(req);
+            await check('rescheduled.time').notEmpty().withMessage('La hora de reprogramación de llamado no puede ir vacía').run(req);
+        }
         let result = validationResult(req);
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() });
         }
-
-        const { phone, comment, date, companyId, incidenceId, rescheduled } = req.body;
 
         if (!companyId) {
             return res.status(400).json({ error: 'La empresa no es válida' });
@@ -90,7 +95,6 @@ const createCall = async (req, res) => {
         }
     } catch (error) {
         await t.rollback(); // Revertir transacción en caso de error
-        console.error(error);
         return res.status(500).json({ error: 'Error al registrar la llamada' });
     }
 };
@@ -158,9 +162,37 @@ const deleteCall = async (req,res)=>{
     }
 }
 
+const  listRescheduledByUserId = async(req,res)=>{
+    try {
+        const {userId} = req.params;  
+        // Obtener las reschedulaciones filtrando por el assignedId de las compañías asociadas al usuario
+        const rescheduleds = await Rescheduled.findAll({
+          include: [
+            {
+              model: Call,
+              include: {
+                model: Company,
+                where: {
+                  assignedId: userId  // Filtrar las compañías por assignedId del usuario
+                },
+                required: true  // Aseguramos que la relación de la compañía exista
+              },
+              required: true  // Aseguramos que la relación de la llamada exista
+            }
+          ]
+        });
+    
+        res.status(200).json({ rescheduleds })
+      } catch (error) {
+        console.error('Error al obtener las reprogramaciones:', error);
+      }
+
+}
+
 export {
     listIncidents,
     createCall,
     listCallsByCompany,
-    deleteCall
+    deleteCall,
+    listRescheduledByUserId
 }

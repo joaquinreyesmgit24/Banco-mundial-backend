@@ -263,7 +263,6 @@ const getRandomEmpresa = async (req, res) => {
                 group: ['phone'],
                 raw: true,
             });
-            console.log(callsCount)
             const callsByPhone = callsCount.reduce((acc, item) => {
                 acc[item.phone] = item.totalCalls;
                 return acc;
@@ -340,10 +339,11 @@ const getRandomEmpresa = async (req, res) => {
             return res.status(404).json({ message: 'No hay empresas disponibles con llamadas.' });
         }
     } catch (error) {
-        console.error(error);
         return res.status(500).json({ error: 'Error al obtener la empresa.' });
     }
-};
+}
+
+
 
 
 export {

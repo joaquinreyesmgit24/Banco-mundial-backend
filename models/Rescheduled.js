@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import db from '../config/db.js'
 
-const Rescheduled = db.define('Rescheduleds',{
+const Rescheduled = db.define('rescheduleds',{
     date:{
         type:DataTypes.DATE,
         allowNull:false
