@@ -9,6 +9,7 @@ import Call from './Call.js'
 import Incidence from './Incidence.js'
 import Quota from './Quota.js'
 import Survey from './Survey.js'
+import Rescheduled from './Rescheduled.js'
 
 
 Role.hasMany(User, {foreignKey:'roleId'})
@@ -27,6 +28,8 @@ User.hasMany(Company,{foreignKey: 'assignedId'} )
 Company.belongsTo(User,{foreignKey: {name:'assignedId', allowNull:true}} )
 SampleSize.hasMany(Quota, {foreignKey: 'sampleSizeId'})
 Quota.belongsTo(SampleSize, {foreignKey:'sampleSizeId'})
+Call.hasMany(Rescheduled, {foreignKey: 'callId'})
+Rescheduled.belongsTo(Call, {foreignKey: 'callId'})
 
 
 export{
@@ -40,5 +43,6 @@ export{
     Call,
     Incidence,
     Quota,
-    Survey
+    Survey,
+    Rescheduled
 }

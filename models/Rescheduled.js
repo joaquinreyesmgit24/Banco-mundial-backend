@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import db from '../config/db.js'
 
-const Call = db.define('calls',{
+const Rescheduled = db.define('Rescheduleds',{
     date:{
         type:DataTypes.DATE,
         allowNull:false
@@ -12,4 +12,4 @@ const Call = db.define('calls',{
     },
 })
 
-export default Call
+export default Rescheduled

@@ -263,7 +263,7 @@ const getRandomEmpresa = async (req, res) => {
                 group: ['phone'],
                 raw: true,
             });
-
+            console.log(callsCount)
             const callsByPhone = callsCount.reduce((acc, item) => {
                 acc[item.phone] = item.totalCalls;
                 return acc;

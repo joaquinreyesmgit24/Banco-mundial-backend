@@ -1,9 +1,11 @@
 import { check, validationResult } from 'express-validator'
-import {Call, Incidence, Company, Sequelize} from '../models/index.js'
+import {Call, Incidence, Company, Rescheduled, Sequelize} from '../models/index.js'
+import db from '../config/db.js'
 import moment from 'moment'
 import { Op } from 'sequelize';
 
 const createCall = async (req, res) => {
+    const t = await db.transaction(); // Iniciar transacción
     try {
         await check('phone').notEmpty().withMessage('El teléfono no ha sido seleccionado').run(req);
         await check('date').notEmpty().withMessage('La fecha no es válida').run(req);
@@ -13,8 +15,7 @@ const createCall = async (req, res) => {
             return res.status(400).json({ errors: result.array() });
         }
 
-        const { phone, comment, date, companyId, incidenceId } = req.body;
-
+        const { phone, comment, date, companyId, incidenceId, rescheduled } = req.body;
 
         if (!companyId) {
             return res.status(400).json({ error: 'La empresa no es válida' });
@@ -24,8 +25,7 @@ const createCall = async (req, res) => {
             return res.status(400).json({ error: 'Debe seleccionar una incidencia' });
         }
 
-        const company = await Company.findByPk(companyId); // Buscar la empresa
-
+        const company = await Company.findByPk(companyId);
         if (!company) {
             return res.status(400).json({ error: 'La empresa no existe' });
         }
@@ -33,7 +33,6 @@ const createCall = async (req, res) => {
         const todayStart = moment().startOf('day').format('YYYY-MM-DD 00:00:00');
         const todayEnd = moment().endOf('day').format('YYYY-MM-DD 23:59:59');
 
-        // Contar llamadas del día actual para cada número de teléfono
         const callsCount = await Call.findAll({
             where: {
                 date: { [Op.between]: [todayStart, todayEnd] },
@@ -46,55 +45,55 @@ const createCall = async (req, res) => {
             group: ['phone'],
             raw: true
         });
-        // Convertir resultados en un objeto para fácil acceso
+
         const callsByPhone = callsCount.reduce((acc, item) => {
             acc[item.phone] = item.totalCalls;
             return acc;
         }, {});
 
-
-        // Obtener la cantidad de llamadas ya realizadas hoy
         const callsMadeOne = callsByPhone[company.phoneNumberOne] || 0;
         const callsMadeTwo = callsByPhone[company.phoneNumberSecond] || 0;
 
-        // Verificar disponibilidad de llamadas según el teléfono ingresado
-        if (phone === company.phoneNumberOne) {
-            if (callsMadeOne >= company.numberPhoneCallsOne) {
-                return res.status(400).json({ error: 'No hay llamadas disponibles para este número de teléfono' });
-            }
-        } else if (phone === company.phoneNumberSecond) {
-            if (callsMadeTwo >= company.numberPhoneCallsSecond) {
-                return res.status(400).json({ error: 'No hay llamadas disponibles para este número de teléfono' });
-            }
-        } else {
+        if (phone === company.phoneNumberOne && callsMadeOne >= company.numberPhoneCallsOne) {
+            return res.status(400).json({ error: 'No hay llamadas disponibles para este número de teléfono' });
+        } else if (phone === company.phoneNumberSecond && callsMadeTwo >= company.numberPhoneCallsSecond) {
+            return res.status(400).json({ error: 'No hay llamadas disponibles para este número de teléfono' });
+        } else if (phone !== company.phoneNumberOne && phone !== company.phoneNumberSecond) {
             return res.status(400).json({ error: 'El número de teléfono no coincide con los números registrados' });
         }
 
-        // Si hay llamadas disponibles, se crea la llamada
-        const call = await Call.create({ phone, comment, date, companyId, incidenceId });
+        // Crear la llamada dentro de la transacción
+        const callCreate = await Call.create({ phone, comment, date, companyId, incidenceId }, { transaction: t });
 
+        // Si incidenceId es 3, crear también el registro en Rescheduled
+
+        if (incidenceId == 3) {
+            const rescheduledCreate = await Rescheduled.create({ callId: callCreate.id, date:rescheduled.date, time:rescheduled.time }, { transaction: t });
+        }
+
+        // Confirmar la transacción si todo está bien
+        await t.commit();
+
+        // Obtener todas las llamadas con su incidencia
         const calls = await Call.findAll({
-            include: [
-                {
-                    model: Incidence,
-                    required: true
-                },
-            ]
+            include: [{ model: Incidence, required: true }]
         });
 
         if (incidenceId == 2) {
-            return res.status(200).json({ msg: 'Se ha guardado correctamente la incidencia', call, calls });
+            return res.status(200).json({ msg: 'Se ha guardado correctamente la incidencia', callCreate, calls });
         }
         if (incidenceId == 1) {
-            return res.status(200).json({ msg: 'Se ha empezado la encuesta', call, calls });
+            return res.status(200).json({ msg: 'Se ha empezado la encuesta', callCreate, calls });
         }
-
+        if (incidenceId == 3) {
+            return res.status(200).json({ msg: 'Se ha reprogramado la llamada', callCreate, rescheduled, calls });
+        }
     } catch (error) {
+        await t.rollback(); // Revertir transacción en caso de error
         console.error(error);
         return res.status(500).json({ error: 'Error al registrar la llamada' });
     }
-}
-
+};
 const listIncidents = async (req,res)=>{
     try {
         const incidents = await Incidence.findAll();
