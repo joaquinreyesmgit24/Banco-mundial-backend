@@ -243,7 +243,7 @@ const deleteCompany = async (req, res) => {
         res.status(500).json({ error: 'Error al eliminar la empresa' });
     }
 }
-const getRandomEmpresa = async (req, res) => {
+const getRandomCompany = async (req, res) => {
     const { userId } = req.params;
     try {
         // Función para verificar si una empresa tiene llamadas disponibles
@@ -300,7 +300,6 @@ const getRandomEmpresa = async (req, res) => {
                 const randomAssignedCompany = availableAssignedCompanies[
                     Math.floor(Math.random() * availableAssignedCompanies.length)
                 ];
-                console.log(randomAssignedCompany);
 
                 return res.json(randomAssignedCompany);
             } else {
@@ -343,7 +342,52 @@ const getRandomEmpresa = async (req, res) => {
     }
 }
 
+const getSelectCompanyToCallById = async (req, res) => {
+    const { companyId } = req.params;
+    try {
+        const company = await Company.findOne({ where: { id: companyId } });
+        if (!company) {
+            return res.status(404).json({ message: "Empresa no encontrada" });
+        }
 
+        // Verificar disponibilidad de llamadas (similar a `getRandomEmpresa`)
+        const todayStart = moment().startOf('day').format('YYYY-MM-DD 00:00:00');
+        const todayEnd = moment().endOf('day').format('YYYY-MM-DD 23:59:59');
+
+        const callsCount = await Call.findAll({
+            where: {
+                date: { [Op.between]: [todayStart, todayEnd] },
+                phone: { [Op.in]: [company.phoneNumberOne, company.phoneNumberSecond] },
+            },
+            attributes: [
+                'phone',
+                [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalCalls'],
+            ],
+            group: ['phone'],
+            raw: true,
+        });
+
+        const callsByPhone = callsCount.reduce((acc, item) => {
+            acc[item.phone] = item.totalCalls;
+            return acc;
+        }, {});
+
+        const callsMadeOne = callsByPhone[company.phoneNumberOne] || 0;
+        const callsMadeTwo = callsByPhone[company.phoneNumberSecond] || 0;
+
+        const isPhoneOneAvailable = callsMadeOne < company.numberPhoneCallsOne;
+        const isPhoneTwoAvailable = callsMadeTwo < company.numberPhoneCallsSecond;
+
+        if (!isPhoneOneAvailable && !isPhoneTwoAvailable) {
+            return res.status(200).json([]);
+        }
+
+        res.json(company);
+    } catch (error) {
+        console.error("Error al obtener la empresa:", error);
+        res.status(500).json({ error: "Error al obtener la empresa" });
+    }
+};
 
 
 export {
@@ -354,5 +398,6 @@ export {
     listSampleSectors,
     listSampleSizes,
     deleteCompany,
-    getRandomEmpresa
+    getRandomCompany,
+    getSelectCompanyToCallById
 }
