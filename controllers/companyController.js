@@ -2,6 +2,7 @@ import { check, validationResult } from 'express-validator'
 import { Company, SampleSize, SampleSector, Panel,Call, Sequelize } from '../models/index.js'
 import moment from 'moment'
 import { Op } from 'sequelize';
+import xlsx from 'xlsx';
 
 const createCompany = async (req, res) => {
     try {
@@ -82,6 +83,101 @@ const createCompany = async (req, res) => {
         res.status(500).json({ error: 'Error al crear la empresa' })
     }
 }
+const uploadCompanies = async (req, res) => {
+    try {
+        // Verificar si el archivo fue enviado
+        if (!req.file) {
+            return res.status(400).json({ error: 'No se ha subido ningún archivo.' });
+        }
+
+        // Leer el archivo Excel
+        const buffer = req.file.buffer;
+        const workbook = xlsx.read(buffer, { type: 'buffer' });
+
+        // Asumimos que los datos están en la primera hoja
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+
+        // Convertir el contenido de la hoja a JSON
+        const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+        const [headers, ...data] = jsonData;
+
+        // Mapeamos las filas a objetos para insertar en la base de datos
+        const companiesData = data.map(row => {
+            return {
+                code: row[headers.indexOf('Code')],
+                rut: row[headers.indexOf('RUT')],
+                name: row[headers.indexOf('Name')],
+                sampleLocation: row[headers.indexOf('SampleLocation')],
+                floorNumber: row[headers.indexOf('FloorNumber')],
+                street: row[headers.indexOf('Street')],
+                city: row[headers.indexOf('City')],
+                state: row[headers.indexOf('State')],
+                phoneNumberOne: row[headers.indexOf('PhoneNumberOne')],
+                numberPhoneCallsOne: row[headers.indexOf('numberPhoneCallsOne')],
+                phoneNumberSecond: row[headers.indexOf('phoneNumberSecond')],
+                numberPhoneCallsSecond: row[headers.indexOf('numberPhoneCallsSecond')],
+                faxNumber: row[headers.indexOf('faxNumber')],
+                use: false,
+                preferenceNumber: row[headers.indexOf('PreferenceNumber')],
+                callStartTime: row[headers.indexOf('callStartTime')],
+                callEndTime: row[headers.indexOf('callEndTime')],
+                emailAddress: row[headers.indexOf('EmailAddress')],
+                sampleSectorId: row[headers.indexOf('SampleSectorId')],
+                sampleSizeId: row[headers.indexOf('SampleSizeId')],
+                panelId: row[headers.indexOf('PanelId')],
+                callStartTime: row[headers.indexOf('CallStartTime')],
+                callEndTime: row[headers.indexOf('CallEndTime')]
+            };
+        });
+
+        // Validación de los campos
+        const errors = [];
+
+        // Recorremos los datos de las empresas para validar
+        for (const company of companiesData) {
+            // Validación para cada campo
+            await check('code').notEmpty().withMessage('El id de la empresa no puede estar vacío').run({ body: company });
+            await check('rut').notEmpty().withMessage('El rut de la empresa no puede estar vacío').run({ body: company });
+            await check('name').notEmpty().withMessage('El nombre de la empresa no puede estar vacío').run({ body: company });
+            await check('sampleLocation').notEmpty().withMessage('La ubicación de la muestra no puede estar vacía').run({ body: company });
+            await check('floorNumber').notEmpty().withMessage('El número de casa/piso/puerta no puede estar vacío').run({ body: company });
+            await check('street').notEmpty().withMessage('La calle no puede estar vacía').run({ body: company });
+            await check('city').notEmpty().withMessage('La ciudad no puede estar vacía').run({ body: company });
+            await check('state').notEmpty().withMessage('El estado no puede estar vacío').run({ body: company });
+            await check('phoneNumberOne').notEmpty().withMessage('El teléfono no puede estar vacío').run({ body: company });
+            await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede estar vacío').run({ body: company });
+            await check('emailAddress').notEmpty().withMessage('El correo electrónico no puede estar vacío').run({ body: company });
+            await check('callStartTime').notEmpty().withMessage('La hora de inicio no puede estar vacía').run({ body: company });
+            await check('callEndTime').notEmpty().withMessage('La hora de fin no puede estar vacía').run({ body: company });
+
+            // Verificar si las validaciones no pasaron
+            const result = validationResult({ body: company });
+            if (!result.isEmpty()) {
+                errors.push({ company, errors: result.array() });
+            }
+
+            // Verifica si la hora de inicio es mayor o igual a la hora de fin
+            if (company.callStartTime >= company.callEndTime) {
+                errors.push({ company, error: 'La hora de inicio no puede ser mayor o igual a la hora de fin' });
+            }
+        }
+
+        // Si hay errores, devuelve los errores encontrados
+        if (errors.length > 0) {
+            return res.status(400).json({ errors });
+        }
+
+        // Insertar los datos en la base de datos
+        const insertedCompanies = await Company.bulkCreate(companiesData);
+
+        res.status(200).json({ msg: 'Empresas cargadas exitosamente', insertedCompanies });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al cargar las empresas' });
+    }
+};
+
 
 const updateCompany = async (req, res) => {
     try {
@@ -399,5 +495,6 @@ export {
     listSampleSizes,
     deleteCompany,
     getRandomCompany,
-    getSelectCompanyToCallById
+    getSelectCompanyToCallById,
+    uploadCompanies
 }
