@@ -69,6 +69,10 @@ const Survey = db.define('surveys',{
     Q_S12_inter_cargo:{
         type:DataTypes.STRING,
         allowNull:true
+    },
+    status:{
+        type:DataTypes.STRING,
+        allowNull:true
     }
 })
 
