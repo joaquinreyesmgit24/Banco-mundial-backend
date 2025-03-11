@@ -6,6 +6,7 @@ import userRoutes from './routes/userRoutes.js';
 import companyRoutes from './routes/companyRoutes.js'
 import callRoutes from './routes/callRoutes.js'
 import quotaRoutes from './routes/quotaRoutes.js'
+import surveyRoutes from './routes/surveyRoutes.js'
 import db from './config/db.js';
 
 //create application
@@ -30,6 +31,8 @@ app.use('/auth', userRoutes)
 app.use('/quota', quotaRoutes)
 app.use('/company',companyRoutes)
 app.use('/call',callRoutes)
+app.use('/survey',surveyRoutes)
+
 
 
 const port = 3000;

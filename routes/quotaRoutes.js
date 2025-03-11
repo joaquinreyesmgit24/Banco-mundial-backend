@@ -1,6 +1,6 @@
 import express from 'express'
 
-import {listQuotas, updateQuota } from '../controllers/QuotaController.js'
+import {listQuotas, updateQuota } from '../controllers/quotaController.js'
 
 const router = express.Router()
 

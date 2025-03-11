@@ -30,6 +30,8 @@ SampleSize.hasMany(Quota, {foreignKey: 'sampleSizeId'})
 Quota.belongsTo(SampleSize, {foreignKey:'sampleSizeId'})
 Call.hasMany(Rescheduled, {foreignKey: 'callId'})
 Rescheduled.belongsTo(Call, {foreignKey: 'callId'})
+Company.hasMany(Survey,{foreignKey:'companyId'} )
+Survey.belongsTo(Company, {foreignKey:'companyId'})
 
 
 export{
