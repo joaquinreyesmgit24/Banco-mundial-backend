@@ -35,12 +35,9 @@ const createCall = async (req, res) => {
             return res.status(400).json({ error: 'La empresa no existe' });
         }
 
-        const todayStart = moment().startOf('day').format('YYYY-MM-DD 00:00:00');
-        const todayEnd = moment().endOf('day').format('YYYY-MM-DD 23:59:59');
-
         const callsCount = await Call.findAll({
             where: {
-                date: { [Op.between]: [todayStart, todayEnd] },
+                date,
                 phone: { [Op.in]: [company.phoneNumberOne, company.phoneNumberSecond] }
             },
             attributes: [

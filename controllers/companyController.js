@@ -340,151 +340,157 @@ const deleteCompany = async (req, res) => {
     }
 }
 const getRandomCompany = async (req, res) => {
-    const { userId } = req.params;
     try {
-        // Función para verificar si una empresa tiene llamadas disponibles
-        const checkCallsAvailability = async (company) => {
-            const todayStart = moment().startOf('day').format('YYYY-MM-DD 00:00:00');
-            const todayEnd = moment().endOf('day').format('YYYY-MM-DD 23:59:59');
+        const { userId } = req.params;
 
-            const callsCount = await Call.findAll({
-                where: {
-                    date: { [Op.between]: [todayStart, todayEnd] },
-                    phone: { [Op.in]: [company.phoneNumberOne, company.phoneNumberSecond] },
-                },
-                attributes: [
-                    'phone',
-                    [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalCalls'],
-                ],
-                group: ['phone'],
-                raw: true,
-            });
-            const callsByPhone = callsCount.reduce((acc, item) => {
-                acc[item.phone] = item.totalCalls;
-                return acc;
-            }, {});
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
 
-            const callsMadeOne = callsByPhone[company.phoneNumberOne] || 0;
-            const callsMadeTwo = callsByPhone[company.phoneNumberSecond] || 0;
-
-            // Aquí estamos comprobando si las llamadas realizadas son menores a las permitidas
-            const isPhoneOneAvailable = callsMadeOne < company.numberPhoneCallsOne;
-            const isPhoneTwoAvailable = callsMadeTwo < company.numberPhoneCallsSecond;
-
-            // Ambas condiciones deben ser verdaderas para que la empresa esté disponible
-            return isPhoneOneAvailable || isPhoneTwoAvailable;
-        };
-
-        // Obtener todas las empresas asignadas al usuario con use=true
-        const assignedCompanies = await Company.findAll({
-            where: { assignedId: userId, use: true },
+        let companies = await Company.findAll({
+            where: {
+                [Op.or]: [
+                    { assignedId: userId },
+                    { assignedId: null }
+                ]
+            },
+            include: [{
+                model: Call,
+                as: 'calls',
+                attributes: ['date', 'phone'], // Aquí usamos 'phone' en lugar de 'phoneNumber'
+                required: false
+            }]
         });
 
-        if (assignedCompanies.length > 0) {
-            // Evaluar disponibilidad de llamadas para las empresas asignadas
-            const availabilityResults = await Promise.all(
-                assignedCompanies.map((company) => checkCallsAvailability(company))
-            );
+        // Mapear empresas con el conteo de llamadas por número de teléfono
+        companies = companies.map(company => {
+            const callsByPhoneOne = company.calls.filter(call => call.phone === company.phoneNumberOne).length;
+            const callsByPhoneTwo = company.calls.filter(call => call.phone === company.phoneNumberSecond).length;
 
-            // Filtrar las empresas que tienen llamadas disponibles
-            const availableAssignedCompanies = assignedCompanies.filter(
-                (_, index) => availabilityResults[index]
-            );
-
-            if (availableAssignedCompanies.length > 0) {
-                // Seleccionar una empresa aleatoria de las disponibles
-                const randomAssignedCompany = availableAssignedCompanies[
-                    Math.floor(Math.random() * availableAssignedCompanies.length)
-                ];
-
-                return res.json(randomAssignedCompany);
-            } else {
-                return res.status(404).json({ message: 'No hay empresas asignadas con llamadas disponibles.' });
-            }
-        }
-
-        // Si no hay empresas asignadas disponibles, buscar nuevas empresas no asignadas
-        const newCompanies = await Company.findAll({
-            where: { use: false, assignedId: null },
+            return {
+                ...company.toJSON(),
+                callsByPhoneOne,
+                callsByPhoneTwo,
+                callsToday: company.calls.filter(call => new Date(call.date) >= startOfDay).length,
+                calls: company.calls || []
+            };
         });
 
-        // Evaluar disponibilidad de llamadas para las nuevas empresas
-        const availabilityNewResults = await Promise.all(
-            newCompanies.map((company) => checkCallsAvailability(company))
-        );
+        console.log("Empresas antes del filtrado:", companies.map(c => ({
+            id: c.id,
+            assignedId: c.assignedId,
+            callsByPhoneOne: c.callsByPhoneOne,
+            callsByPhoneTwo: c.callsByPhoneTwo
+        })));
 
-        // Filtrar las empresas que tienen llamadas disponibles
-        const availableNewCompanies = newCompanies.filter(
-            (_, index) => availabilityNewResults[index]
-        );
+        // Filtro 1: Asegurar que al menos un número de teléfono tenga llamadas disponibles
+        companies = companies.filter(company => {
+            const remainingCallsPhoneOne = company.numberPhoneCallsOne - company.callsByPhoneOne;
+            const remainingCallsPhoneTwo = company.numberPhoneCallsSecond - company.callsByPhoneTwo;
 
-        if (availableNewCompanies.length > 0) {
-            // Seleccionar una empresa aleatoria de las disponibles
-            const randomNewCompany = availableNewCompanies[
-                Math.floor(Math.random() * availableNewCompanies.length)
-            ];
+            return remainingCallsPhoneOne > 0 || remainingCallsPhoneTwo > 0;
+        });
 
-            // Asignar la empresa al encuestador y marcarla como en uso
-            randomNewCompany.assignedId = userId;
-            randomNewCompany.use = true;
-            await randomNewCompany.save();
+        console.log("Empresas después del filtro de disponibilidad de llamadas:", companies.map(c => c.id));
 
-            return res.json(randomNewCompany);
-        } else {
-            return res.status(404).json({ message: 'No hay empresas disponibles con llamadas.' });
+        // Filtro 2: Empresas con menos de 3 llamadas hoy
+        companies = companies.filter(company => company.callsToday < 3);
+
+        console.log("Empresas después del filtro de 3 llamadas por día:", companies.map(c => c.id));
+
+        // Filtro 3: Empresas con última llamada hace más de 30 minutos
+        companies = companies.filter(company => {
+            if (company.calls.length === 0) return true;
+
+            const lastCall = company.calls.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            const lastCallTime = new Date(lastCall.date).getTime();
+            const currentTime = new Date().getTime();
+            const differenceMinutes = (currentTime - lastCallTime) / (60 * 1000);
+
+            console.log(`Empresa ${company.id} - Última llamada: ${lastCall.date}, Diferencia: ${differenceMinutes.toFixed(2)} min`);
+
+            return differenceMinutes >= 30;
+        });
+
+        console.log("Empresas después del filtro de 30 minutos:", companies.map(c => c.id));
+
+        if (companies.length === 0) {
+            return res.status(404).json({ message: "No hay empresas disponibles en este momento." });
         }
+
+        // Seleccionar una empresa aleatoria
+        const randomIndex = Math.floor(Math.random() * companies.length);
+        const randomCompany = companies[randomIndex];
+
+        // Si la empresa no tiene un usuario asignado, se asigna
+        if (!randomCompany.assignedId) {
+            await Company.update(
+                { assignedId: userId, use: true },
+                { where: { id: randomCompany.id } }
+            );
+        }
+
+        res.json(randomCompany);
     } catch (error) {
-        return res.status(500).json({ error: 'Error al obtener la empresa.' });
+        console.error("Error obteniendo empresa aleatoria:", error);
+        res.status(500).json({ message: "Error interno del servidor." });
     }
-}
-
+};
 const getSelectCompanyToCallById = async (req, res) => {
     const { companyId } = req.params;
     try {
-        const company = await Company.findOne({ where: { id: companyId } });
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        // Buscar la empresa específica con sus llamadas asociadas
+        const company = await Company.findOne({
+            where: { id: companyId },
+            include: [{
+                model: Call,
+                as: 'calls',
+                attributes: ['date', 'phone'],
+                required: false
+            }]
+        });
+
         if (!company) {
             return res.status(404).json({ message: "Empresa no encontrada" });
         }
 
-        // Verificar disponibilidad de llamadas (similar a `getRandomEmpresa`)
-        const todayStart = moment().startOf('day').format('YYYY-MM-DD 00:00:00');
-        const todayEnd = moment().endOf('day').format('YYYY-MM-DD 23:59:59');
+        // Contar llamadas por cada número de teléfono
+        const callsByPhoneOne = company.calls.filter(call => call.phone === company.phoneNumberOne).length;
+        const callsByPhoneTwo = company.calls.filter(call => call.phone === company.phoneNumberSecond).length;
 
-        const callsCount = await Call.findAll({
-            where: {
-                date: { [Op.between]: [todayStart, todayEnd] },
-                phone: { [Op.in]: [company.phoneNumberOne, company.phoneNumberSecond] },
-            },
-            attributes: [
-                'phone',
-                [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalCalls'],
-            ],
-            group: ['phone'],
-            raw: true,
-        });
+        const companyData = {
+            ...company.toJSON(),
+            callsByPhoneOne,
+            callsByPhoneTwo,
+            callsToday: company.calls.filter(call => new Date(call.date) >= startOfDay).length,
+            calls: company.calls || []
+        };
 
-        const callsByPhone = callsCount.reduce((acc, item) => {
-            acc[item.phone] = item.totalCalls;
-            return acc;
-        }, {});
-
-        const callsMadeOne = callsByPhone[company.phoneNumberOne] || 0;
-        const callsMadeTwo = callsByPhone[company.phoneNumberSecond] || 0;
-
-        const isPhoneOneAvailable = callsMadeOne < company.numberPhoneCallsOne;
-        const isPhoneTwoAvailable = callsMadeTwo < company.numberPhoneCallsSecond;
-
-        if (!isPhoneOneAvailable && !isPhoneTwoAvailable) {
-            return res.status(200).json([]);
+        console.log("Empresa antes de filtros:", {
+            id: companyData.id,
+            assignedId: companyData.assignedId,
+            callsByPhoneOne: companyData.callsByPhoneOne,
+            callsByPhoneTwo: companyData.callsByPhoneTwo,
+            callsToday: companyData.callsToday
+        })
+        // Filtro 1: Verificar si aún tiene llamadas disponibles
+        const remainingCallsPhoneOne = companyData.numberPhoneCallsOne - companyData.callsByPhoneOne;
+        const remainingCallsPhoneTwo = companyData.numberPhoneCallsSecond - companyData.callsByPhoneTwo;
+        if (remainingCallsPhoneOne <= 0 && remainingCallsPhoneTwo <= 0) {
+            return res.status(400).json({ message: "La empresa ya ha alcanzado el límite de llamadas permitidas." });
         }
-
-        res.json(company);
+        // Filtro 2: No más de 3 llamadas hoy
+        if (companyData.callsToday >= 3) {
+            return res.status(400).json({ message: "La empresa ya ha recibido 3 llamadas hoy." });
+        }
+        res.json(companyData);
     } catch (error) {
-        console.error("Error al obtener la empresa:", error);
-        res.status(500).json({ error: "Error al obtener la empresa" });
+        console.error("Error obteniendo empresa específica:", error);
+        res.status(500).json({ message: "Error interno del servidor." });
     }
-};
-
+}
 
 export {
     createCompany,
