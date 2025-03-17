@@ -2,7 +2,7 @@ import express from 'express'
 import multer from 'multer';
 
 import { createCompany, listCompanies,updateCompany,uploadCompanies,
-    listPanels, listSampleSectors, listSampleSizes, deleteCompany} from '../controllers/companyController.js'
+    listPanels, listSampleSectors, listSampleSizes, listRegions, deleteCompany} from '../controllers/companyController.js'
 
 const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage()}).single('file');
@@ -14,6 +14,7 @@ router.get('/list-companies', listCompanies)
 router.get('/list-panels', listPanels)
 router.get('/list-sample-sectors', listSampleSectors)
 router.get('/list-sample-sizes', listSampleSizes)
+router.get('/list-regions', listRegions)
 router.delete('/delete-company/:companyId', deleteCompany)
 
 export default router;

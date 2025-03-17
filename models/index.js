@@ -10,6 +10,9 @@ import Incidence from './Incidence.js'
 import Quota from './Quota.js'
 import Survey from './Survey.js'
 import Rescheduled from './Rescheduled.js'
+import Report from './Report.js'
+import Country from './Country.js'
+import Region from './Region.js'
 
 
 Role.hasMany(User, {foreignKey:'roleId'})
@@ -32,6 +35,13 @@ Call.hasMany(Rescheduled, {foreignKey: 'callId'})
 Rescheduled.belongsTo(Call, {foreignKey: 'callId'})
 Company.hasMany(Survey,{foreignKey:'companyId'} )
 Survey.belongsTo(Company, {foreignKey:'companyId'})
+Company.hasMany(Report,{foreignKey:'companyId'} )
+Report.belongsTo(Company, {foreignKey:'companyId'})
+Country.hasMany(Company, {foreignKey: 'countryId'})
+Company.belongsTo(Country, {foreignKey:'countryId'})
+Region.hasMany(Company, {foreignKey: 'regionId'})
+Company.belongsTo(Region, {foreignKey:'regionId'})
+
 
 
 export{
@@ -46,5 +56,8 @@ export{
     Incidence,
     Quota,
     Survey,
-    Rescheduled
+    Rescheduled,
+    Report,
+    Region,
+    Country
 }

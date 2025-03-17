@@ -35,13 +35,21 @@ const Company = db.define('companies',{
         type:DataTypes.STRING,
         allowNull:false
     },
+    contactPerson:{
+        type:DataTypes.STRING,
+        allowNull:true 
+    },
+    contactPosition:{
+        type:DataTypes.STRING,
+        allowNull:true 
+    },
     phoneNumberOne:{
         type:DataTypes.INTEGER,
         allowNull:false
     },
     numberPhoneCallsOne:{
         type:DataTypes.INTEGER,
-        allowNull:true
+        allowNull:false
     },
     phoneNumberSecond:{
         type:DataTypes.INTEGER,
@@ -51,6 +59,10 @@ const Company = db.define('companies',{
         type:DataTypes.INTEGER,
         allowNull:true
     },
+    zipCode:{
+        type:DataTypes.STRING,
+        allowNull:false 
+    },
     faxNumber:{
         type:DataTypes.INTEGER,
         allowNull:true
@@ -59,15 +71,6 @@ const Company = db.define('companies',{
         type:DataTypes.INTEGER,
         allowNull:false
     },
-    callStartTime:{
-        type:DataTypes.TIME,
-        allowNull:false
-    },
-    callEndTime:{
-        type:DataTypes.TIME,
-        allowNull:false
-    },
-
     emailAddress:{
         type:DataTypes.STRING,
         allowNull:false

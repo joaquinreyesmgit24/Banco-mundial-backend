@@ -1,11 +1,33 @@
 import { check, validationResult } from 'express-validator'
-import { Company, SampleSize, SampleSector, Panel,Call, Sequelize } from '../models/index.js'
+import { Company, SampleSize, SampleSector, Panel,Call, Country,Region, Sequelize } from '../models/index.js'
 import moment from 'moment'
 import { Op } from 'sequelize';
 import xlsx from 'xlsx';
 
 const createCompany = async (req, res) => {
     try {
+        const {
+            code,
+            rut,
+            name,
+            sampleLocation,
+            floorNumber,
+            street,
+            city,
+            state,
+            phoneNumberOne,
+            numberPhoneCallsOne,
+            phoneNumberSecond,
+            numberPhoneCallsSecond,
+            zipCode,
+            faxNumber,
+            preferenceNumber,
+            emailAddress,
+            sampleSectorId,
+            sampleSizeId,
+            panelId,
+            regionId} = req.body;
+
         await check('code').notEmpty().withMessage('El id de la empresa no puede estar vacio').run(req)
         await check('rut').notEmpty().withMessage('El rut de la empresa no puede estar vacio').run(req)
         await check('name').notEmpty().withMessage('El nombre de la empresa no puede estar vacio').run(req)
@@ -15,29 +37,19 @@ const createCompany = async (req, res) => {
         await check('city').notEmpty().withMessage('La ciudad de la empresa no puede ir vacio').run(req)
         await check('state').notEmpty().withMessage('El estado de la empresa no puede ir vacio').run(req)
         await check('phoneNumberOne').notEmpty().withMessage('El teléfono uno de la empresa no puede ir vacio').run(req)
+        await check('numberPhoneCallsOne').notEmpty().withMessage('El número de llamadas del teléfono 1 no puede ir vacio').run(req)
+        if(phoneNumberSecond){
+            await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono 2 no puede ir vacio').run(req)
+        }
+        await check('zipCode').notEmpty().withMessage('El código postal no puede ir vacio').run(req)
+        await check('faxNumber').notEmpty().withMessage('El número de fax no puede ir vacio').run(req)
         await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').run(req)
         await check('emailAddress').notEmpty().withMessage('El correo de la empresa no puede ir vacio').run(req)
-
-        await check('callStartTime')
-            .notEmpty()
-            .withMessage('La hora de inicio de llamada no puede estar vacía')
-            .run(req);
-
-        await check('callEndTime')
-            .notEmpty()
-            .withMessage('La hora de término de llamada no puede estar vacía')
-            .run(req);
-
-
         let result = validationResult(req)
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() })
         } 
-        const { code, rut, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, numberPhoneCallsOne, phoneNumberSecond, numberPhoneCallsSecond, faxNumber, preferenceNumber, callStartTime, callEndTime, emailAddress, sampleSectorId, sampleSizeId, panelId} = req.body;
 
-        if (callStartTime >= callEndTime) {
-            return res.status(400).json({ error: 'La hora de inicio de llamada no puede ser mayor o igual a la hora de término.' });
-        }
         const companyExists = await Company.findOne({
             where: {
                 [Sequelize.Op.or]: [
@@ -50,7 +62,6 @@ const createCompany = async (req, res) => {
         if (companyExists) {
             return res.status(400).json({ error: 'La empresa ya existe' });
         }
-
         if (!sampleSectorId) {
             return res.status(400).json({ error: 'Debe seleccionar un sector de la muestra válido' });
         }
@@ -60,7 +71,34 @@ const createCompany = async (req, res) => {
         if (!panelId) {
             return res.status(400).json({ error: 'Debe seleccionar un panel válido' });
         }
-        const company = await Company.create({ code, rut, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, numberPhoneCallsOne, phoneNumberSecond, numberPhoneCallsSecond, faxNumber, preferenceNumber, callStartTime, callEndTime, emailAddress, sampleSectorId, sampleSizeId, panelId, use: false });
+        if(!regionId){
+            return res.status(400).json({ error: 'Debe seleccionar una región válida' });
+        }
+
+
+        const company = await Company.create({ code,
+            rut,
+            name,
+            sampleLocation,
+            floorNumber,
+            street,
+            city,
+            state,
+            phoneNumberOne,
+            numberPhoneCallsOne,
+            phoneNumberSecond,
+            numberPhoneCallsSecond,
+            zipCode,
+            faxNumber,
+            preferenceNumber,
+            emailAddress,
+            sampleSectorId,
+            sampleSizeId,
+            panelId,
+            countryId:1,
+            regionId,
+             use: false });
+
         const companies = await Company.findAll({
             include: [
                 {
@@ -74,7 +112,15 @@ const createCompany = async (req, res) => {
                 {
                     model: Panel,
                     required: true
-                }
+                },
+                {
+                    model: Country,
+                    required: true
+                },
+                {
+                    model: Region,
+                    required: true
+                },
             ]
         });
         res.status(200).json({ msg: 'Empresa creada correctamente', company, companies })
@@ -181,6 +227,28 @@ const uploadCompanies = async (req, res) => {
 
 const updateCompany = async (req, res) => {
     try {
+        const {
+            code,
+            rut,
+            name,
+            sampleLocation,
+            floorNumber,
+            street,
+            city,
+            state,
+            phoneNumberOne,
+            numberPhoneCallsOne,
+            phoneNumberSecond,
+            numberPhoneCallsSecond,
+            zipCode,
+            faxNumber,
+            preferenceNumber,
+            emailAddress,
+            sampleSectorId,
+            sampleSizeId,
+            panelId,
+            regionId} = req.body;
+
         await check('code').notEmpty().withMessage('El id de la empresa no puede estar vacio').run(req)
         await check('rut').notEmpty().withMessage('El rut de la empresa no puede estar vacio').run(req)
         await check('name').notEmpty().withMessage('El nombre de la empresa no puede estar vacio').run(req)
@@ -190,24 +258,21 @@ const updateCompany = async (req, res) => {
         await check('city').notEmpty().withMessage('La ciudad de la empresa no puede ir vacio').run(req)
         await check('state').notEmpty().withMessage('El estado de la empresa no puede ir vacio').run(req)
         await check('phoneNumberOne').notEmpty().withMessage('El teléfono uno de la empresa no puede ir vacio').run(req)
+        await check('numberPhoneCallsOne').notEmpty().withMessage('El número de llamadas del teléfono 1 no puede ir vacio').run(req)
+        if(phoneNumberSecond){
+            await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono 2 no puede ir vacio').run(req)
+        }
+        await check('zipCode').notEmpty().withMessage('El código postal no puede ir vacio').run(req)
+        await check('faxNumber').notEmpty().withMessage('El número de fax no puede ir vacio').run(req)
         await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').run(req)
         await check('emailAddress').notEmpty().withMessage('El correo de la empresa no puede ir vacio').run(req)
-
-        await check('callStartTime')
-        .notEmpty()
-        .withMessage('La hora de inicio de llamada no puede estar vacía')
-        .run(req);
-
-        await check('callEndTime')
-        .notEmpty()
-        .withMessage('La hora de término de llamada no puede estar vacía')
-        .run(req);
-
+       
         let result = validationResult(req)
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() })
-        }
-        const { code, rut, name, sampleLocation, floorNumber, street, city, state, phoneNumberOne, numberPhoneCallsOne, phoneNumberSecond, numberPhoneCallsSecond, faxNumber, preferenceNumber, callStartTime, callEndTime, emailAddress, sampleSectorId, sampleSizeId, panelId } = req.body;
+        } 
+
+
         const company = await Company.findOne({ where: { code } })
         if (!company) {
             return res.status(400).json({ error: 'La empresa a actualizar no existe' });
@@ -220,6 +285,9 @@ const updateCompany = async (req, res) => {
         }
         if (!panelId) {
             return res.status(400).json({ error: 'Debe seleccionar un panel válido' });
+        }
+        if(!regionId){
+            return res.status(400).json({ error: 'Debe seleccionar una región válida' });
         }
 
         company.code = code
@@ -234,14 +302,14 @@ const updateCompany = async (req, res) => {
         company.numberPhoneCallsOne= numberPhoneCallsOne
         company.phoneNumberSecond = phoneNumberSecond
         company.numberPhoneCallsSecond = numberPhoneCallsSecond
+        company.zipCode = zipCode
         company.faxNumber = faxNumber
         company.preferenceNumber = preferenceNumber
-        company.callStartTime =callStartTime
-        company.callEndTime=callEndTime
-        company.emailAdress = emailAddress
+        company.emailAddress = emailAddress
         company.sampleSectorId = sampleSectorId
         company.sampleSizeId = sampleSizeId
         company.panelId = panelId
+        company.regionId = regionId
 
         await company.save();
 
@@ -258,9 +326,18 @@ const updateCompany = async (req, res) => {
                 {
                     model: Panel,
                     required: true
-                }
+                },
+                {
+                    model: Country,
+                    required: true
+                },
+                {
+                    model: Region,
+                    required: true
+                },
             ]
         });
+
         res.status(200).json({ msg: 'Empresa actualizada correctamente', company, companies })
 
     } catch (error) {
@@ -269,20 +346,30 @@ const updateCompany = async (req, res) => {
 }
 const listCompanies = async (req, res) => {
     try {
-        const companies = await Company.findAll(
-            {
-                include: SampleSize,
-                required: true
-            },
-            {
-                include: SampleSector,
-                required: true
-            },
-            {
-                include: Panel,
-                required: true
-            },
-        );
+         const companies = await Company.findAll({
+            include: [
+                {
+                    model: SampleSize,
+                    required: true
+                },
+                {
+                    model: SampleSector,
+                    required: true
+                },
+                {
+                    model: Panel,
+                    required: true
+                },
+                {
+                    model: Country,
+                    required: true
+                },
+                {
+                    model: Region,
+                    required: true
+                },
+            ]
+        });
         res.status(200).json({ companies });
     } catch (error) {
         res.status(500).json({ error: 'Error al listar las empresas' });
@@ -312,6 +399,15 @@ const listSampleSizes = async (req, res) => {
         res.status(500).json({ error: 'Error al listar los tamaños de la muestra' });
     }
 }
+const listRegions = async (req, res) => {
+    try {
+        const regions = await Region.findAll();
+        res.status(200).json({ regions });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al listar los tamaños de la muestra' });
+    }
+}
+
 const deleteCompany = async (req, res) => {
     try {
         const { companyId } = req.params;
@@ -320,20 +416,30 @@ const deleteCompany = async (req, res) => {
             return res.status(400).json({ error: 'La empresa no existe' });
         }
         await company.destroy()
-        const companies = await Company.findAll(
-            {
-                include: SampleSize,
-                required: true
-            },
-            {
-                include: SampleSector,
-                required: true
-            },
-            {
-                include: Panel,
-                required: true
-            },
-        );
+        const companies = await Company.findAll({
+            include: [
+                {
+                    model: SampleSize,
+                    required: true
+                },
+                {
+                    model: SampleSector,
+                    required: true
+                },
+                {
+                    model: Panel,
+                    required: true
+                },
+                {
+                    model: Country,
+                    required: true
+                },
+                {
+                    model: Region,
+                    required: true
+                },
+            ]
+        });
         res.status(200).json({ msg: 'Empresa eliminada correctamente', company, companies })
     } catch (error) {
         res.status(500).json({ error: 'Error al eliminar la empresa' });
@@ -502,5 +608,6 @@ export {
     deleteCompany,
     getRandomCompany,
     getSelectCompanyToCallById,
-    uploadCompanies
+    uploadCompanies,
+    listRegions
 }
