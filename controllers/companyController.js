@@ -26,6 +26,7 @@ const createCompany = async (req, res) => {
             sampleSectorId,
             sampleSizeId,
             panelId,
+            web,
             regionId} = req.body;
 
         await check('code').notEmpty().withMessage('El id de la empresa no puede estar vacio').run(req)
@@ -96,6 +97,7 @@ const createCompany = async (req, res) => {
             sampleSizeId,
             panelId,
             countryId:1,
+            web,
             regionId,
              use: false });
 
@@ -246,6 +248,7 @@ const updateCompany = async (req, res) => {
             emailAddress,
             sampleSectorId,
             sampleSizeId,
+            web,
             panelId,
             regionId} = req.body;
 
@@ -308,6 +311,7 @@ const updateCompany = async (req, res) => {
         company.emailAddress = emailAddress
         company.sampleSectorId = sampleSectorId
         company.sampleSizeId = sampleSizeId
+        company.web = web
         company.panelId = panelId
         company.regionId = regionId
 

@@ -75,6 +75,10 @@ const Company = db.define('companies',{
         type:DataTypes.STRING,
         allowNull:false
     },
+    web:{
+        type:DataTypes.STRING,
+        allowNull:true
+    },
     use:{
         type:DataTypes.BOOLEAN,
         allowNull:false
