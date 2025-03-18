@@ -1,5 +1,5 @@
 import { check, validationResult } from 'express-validator'
-import { Company, SampleSize, SampleSector, Panel,Call, Country,Region, Sequelize } from '../models/index.js'
+import { Company, SampleSize, SampleSector, Panel,Call, Country,Region, Sequelize, Report } from '../models/index.js'
 import moment from 'moment'
 import { Op } from 'sequelize';
 import xlsx from 'xlsx';
@@ -75,31 +75,29 @@ const createCompany = async (req, res) => {
         if(!regionId){
             return res.status(400).json({ error: 'Debe seleccionar una región válida' });
         }
-
-
-        const company = await Company.create({ code,
-            rut,
-            name,
-            sampleLocation,
-            floorNumber,
-            street,
-            city,
-            state,
-            phoneNumberOne,
-            numberPhoneCallsOne,
-            phoneNumberSecond,
-            numberPhoneCallsSecond,
-            zipCode,
-            faxNumber,
-            preferenceNumber,
-            emailAddress,
-            sampleSectorId,
-            sampleSizeId,
-            panelId,
+        const company = await Company.create({ code: code,
+            rut:rut,
+            name: name,
+            sampleLocation:sampleLocation,
+            floorNumber:floorNumber,
+            street:street,
+            city:city,
+            state:state,
+            phoneNumberOne:phoneNumberOne,
+            numberPhoneCallsOne:numberPhoneCallsOne,
+            phoneNumberSecond:phoneNumberSecond,
+            numberPhoneCallsSecond:numberPhoneCallsSecond,
+            zipCode:zipCode,
+            faxNumber:faxNumber,
+            preferenceNumber:preferenceNumber,
+            emailAddress:emailAddress,
+            sampleSectorId:sampleSectorId,
+            sampleSizeId:sampleSizeId,
+            panelI:panelId,
             countryId:1,
-            web,
-            regionId,
-             use: false });
+            web:web,
+            regionId:regionId,
+            use: false });
 
         const companies = await Company.findAll({
             include: [
@@ -153,29 +151,28 @@ const uploadCompanies = async (req, res) => {
         // Mapeamos las filas a objetos para insertar en la base de datos
         const companiesData = data.map(row => {
             return {
-                code: row[headers.indexOf('Code')],
-                rut: row[headers.indexOf('RUT')],
-                name: row[headers.indexOf('Name')],
-                sampleLocation: row[headers.indexOf('SampleLocation')],
-                floorNumber: row[headers.indexOf('FloorNumber')],
-                street: row[headers.indexOf('Street')],
-                city: row[headers.indexOf('City')],
-                state: row[headers.indexOf('State')],
-                phoneNumberOne: row[headers.indexOf('PhoneNumberOne')],
+                code: row[headers.indexOf('code')],
+                rut: row[headers.indexOf('rut')],
+                name: row[headers.indexOf('name')],
+                sampleLocation: row[headers.indexOf('sampleLocation')],
+                floorNumber: row[headers.indexOf('floorNumber')],
+                street: row[headers.indexOf('street')],
+                city: row[headers.indexOf('city')],
+                state: row[headers.indexOf('state')],
+                phoneNumberOne: row[headers.indexOf('phoneNumberOne')],
                 numberPhoneCallsOne: row[headers.indexOf('numberPhoneCallsOne')],
                 phoneNumberSecond: row[headers.indexOf('phoneNumberSecond')],
                 numberPhoneCallsSecond: row[headers.indexOf('numberPhoneCallsSecond')],
+                zipCode: row[headers.indexOf('zipCode')],
                 faxNumber: row[headers.indexOf('faxNumber')],
                 use: false,
-                preferenceNumber: row[headers.indexOf('PreferenceNumber')],
-                callStartTime: row[headers.indexOf('callStartTime')],
-                callEndTime: row[headers.indexOf('callEndTime')],
-                emailAddress: row[headers.indexOf('EmailAddress')],
-                sampleSectorId: row[headers.indexOf('SampleSectorId')],
-                sampleSizeId: row[headers.indexOf('SampleSizeId')],
-                panelId: row[headers.indexOf('PanelId')],
-                callStartTime: row[headers.indexOf('CallStartTime')],
-                callEndTime: row[headers.indexOf('CallEndTime')]
+                preferenceNumber: row[headers.indexOf('preferenceNumber')],
+                emailAddress: row[headers.indexOf('emailAddress')],
+                sampleSectorId: row[headers.indexOf('sampleSectorId')],
+                sampleSizeId: row[headers.indexOf('sampleSizeId')],
+                panelId: row[headers.indexOf('panelId')],
+                regionId: row[headers.indexOf('regionId')],
+                web: row[headers.indexOf('web')],
             };
         });
 
@@ -194,20 +191,16 @@ const uploadCompanies = async (req, res) => {
             await check('city').notEmpty().withMessage('La ciudad no puede estar vacía').run({ body: company });
             await check('state').notEmpty().withMessage('El estado no puede estar vacío').run({ body: company });
             await check('phoneNumberOne').notEmpty().withMessage('El teléfono no puede estar vacío').run({ body: company });
+            if(company.phoneNumberSecond){
+                await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono 2 no puede ir vacio').run(req)
+            }
             await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede estar vacío').run({ body: company });
             await check('emailAddress').notEmpty().withMessage('El correo electrónico no puede estar vacío').run({ body: company });
-            await check('callStartTime').notEmpty().withMessage('La hora de inicio no puede estar vacía').run({ body: company });
-            await check('callEndTime').notEmpty().withMessage('La hora de fin no puede estar vacía').run({ body: company });
 
             // Verificar si las validaciones no pasaron
             const result = validationResult({ body: company });
             if (!result.isEmpty()) {
                 errors.push({ company, errors: result.array() });
-            }
-
-            // Verifica si la hora de inicio es mayor o igual a la hora de fin
-            if (company.callStartTime >= company.callEndTime) {
-                errors.push({ company, error: 'La hora de inicio no puede ser mayor o igual a la hora de fin' });
             }
         }
 
@@ -463,13 +456,29 @@ const getRandomCompany = async (req, res) => {
                     { assignedId: null }
                 ]
             },
-            include: [{
-                model: Call,
-                as: 'calls',
-                attributes: ['date', 'phone'], // Aquí usamos 'phone' en lugar de 'phoneNumber'
-                required: false
-            }]
+            include: [
+                {
+                    model: Report,  // Relación con Report
+                    as: 'reports',
+                    attributes: ['id'], // Solo traemos el ID del reporte
+                    required: false // Esto permite traer empresas con o sin reportes
+                },
+                {
+                    model: Call,
+                    as: 'calls',
+                    attributes: ['date', 'phone'],
+                    required: false
+                }
+            ]
         });
+
+        companies = companies.filter(company => !company.reports || company.reports.length === 0);
+
+        console.log("Empresas sin report:", companies.map(c => c.id));
+
+        if (companies.length === 0) {
+            return res.status(404).json({ message: "No hay empresas sin reportes disponibles en este momento." });
+        }
 
         // Mapear empresas con el conteo de llamadas por número de teléfono
         companies = companies.map(company => {
@@ -559,13 +568,22 @@ const getSelectCompanyToCallById = async (req, res) => {
                 as: 'calls',
                 attributes: ['date', 'phone'],
                 required: false
-            }]
+            },{
+                model: Report,  // Relación con Report
+                as: 'reports',
+                attributes: ['id'], // Solo traemos el ID del reporte
+                required: false // Esto permite traer empresas con o sin reportes
+            },]
         });
 
         if (!company) {
             return res.status(404).json({ message: "Empresa no encontrada" });
         }
-
+        // Verificar que no tenga reportes
+        if (company.reports && company.reports.length > 0) {
+            return res.status(400).json({ message: "Esta empresa tiene reportes y no es elegible." });
+        }
+        
         // Contar llamadas por cada número de teléfono
         const callsByPhoneOne = company.calls.filter(call => call.phone === company.phoneNumberOne).length;
         const callsByPhoneTwo = company.calls.filter(call => call.phone === company.phoneNumberSecond).length;

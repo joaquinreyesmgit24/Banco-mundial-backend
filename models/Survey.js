@@ -59,7 +59,7 @@ const Survey = db.define('surveys',{
         allowNull:true
     },
     Q_S12_hour:{
-        type:DataTypes.DATE,
+        type:DataTypes.TIME,
         allowNull:true
     },
     Q_S12_inter_name:{

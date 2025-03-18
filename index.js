@@ -7,6 +7,7 @@ import companyRoutes from './routes/companyRoutes.js'
 import callRoutes from './routes/callRoutes.js'
 import quotaRoutes from './routes/quotaRoutes.js'
 import surveyRoutes from './routes/surveyRoutes.js'
+import reportRoutes from './routes/reportRoutes.js'
 import db from './config/db.js';
 
 //create application
@@ -32,6 +33,7 @@ app.use('/quota', quotaRoutes)
 app.use('/company',companyRoutes)
 app.use('/call',callRoutes)
 app.use('/survey',surveyRoutes)
+app.use('/report',reportRoutes)
 
 
 

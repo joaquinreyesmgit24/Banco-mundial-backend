@@ -1,5 +1,5 @@
 import { check, validationResult } from 'express-validator'
-import {Call, Incidence, Company, Rescheduled, Sequelize} from '../models/index.js'
+import { Call, Incidence, Company, Rescheduled, Sequelize, Report, SampleSize,SampleSector, Country, Region, Panel } from '../models/index.js'
 import db from '../config/db.js'
 import moment from 'moment'
 import { Op } from 'sequelize';
@@ -9,11 +9,11 @@ const createCall = async (req, res) => {
     try {
         await check('phone').notEmpty().withMessage('El teléfono no ha sido seleccionado').run(req);
         await check('date').notEmpty().withMessage('La fecha no es válida').run(req);
-        
+
 
         const { phone, comment, date, companyId, incidenceId, rescheduled } = req.body;
 
-        if(incidenceId==3){
+        if (incidenceId == 7) {
             await check('rescheduled.date').notEmpty().withMessage('La fecha de reprogramación de llamado no puede ir vacía').run(req);
             await check('rescheduled.time').notEmpty().withMessage('La hora de reprogramación de llamado no puede ir vacía').run(req);
         }
@@ -30,7 +30,16 @@ const createCall = async (req, res) => {
             return res.status(400).json({ error: 'Debe seleccionar una incidencia' });
         }
 
-        const company = await Company.findByPk(companyId);
+        const company = await Company.findByPk(companyId, {
+            include: [
+                { model: SampleSize, attributes: ['code', 'description'] },
+                { model: SampleSector, attributes: ['code', 'description'] },
+                { model: Country, attributes: ['name', 'code'] },
+                { model: Region, attributes: ['name', 'code'] },
+                { model: Panel, attributes: ['code', 'description'] },
+            ]
+        });
+
         if (!company) {
             return res.status(400).json({ error: 'La empresa no existe' });
         }
@@ -69,8 +78,42 @@ const createCall = async (req, res) => {
 
         // Si incidenceId es 3, crear también el registro en Rescheduled
 
-        if (incidenceId == 3) {
-            const rescheduledCreate = await Rescheduled.create({ callId: callCreate.id, date:rescheduled.date, time:rescheduled.time }, { transaction: t });
+        if (incidenceId == 7) {
+            const rescheduledCreate = await Rescheduled.create({ callId: callCreate.id, date: rescheduled.date, time: rescheduled.time }, { transaction: t });
+        }
+
+        if (![1, 2, 3, 4, 6, 7].includes(incidenceId)) {  
+            const reportData = {
+                countryName: company.country.name,
+                countryCode: company.country.code,
+                nameStratificationRegion: company.region.name,
+                regionalStratificationCode: company.region.code,
+                nameSizeStratification: company.sampleSize.description,
+                sizeStratificationCode: company.sampleSize.code,
+                nameStratificationSector: company.sampleSector.description,
+                sectorStratificationCode: company.sampleSector.code,
+                panelName: company.panel.description,
+                panelCode: company.panel.code,
+                eligibilityCode:"",
+                statusCode: "",
+                rejectionCode: "",
+                companyName: company.name,
+                locality: "",
+                address: company.street,
+                zipCode: company.zipCode,
+                contactPerson: "",
+                contactPosition: "",
+                phoneNumberOne: company.phoneNumberOne,
+                phoneNumberSecond: company.phoneNumberSecond || "",
+                faxNumber: company.faxNumber,
+                emailAddress: company.emailAddress,
+                web: company.web,
+                companyId: company.id
+            };
+            if(incidenceId){
+                reportData.eligibilityCode = incidenceId;
+            }
+            await Report.create(reportData, { transaction: t });
         }
 
         // Confirmar la transacción si todo está bien
@@ -81,13 +124,15 @@ const createCall = async (req, res) => {
             include: [{ model: Incidence, required: true }]
         });
 
-        if (incidenceId == 2) {
+        if (incidenceId != 1 && incidenceId != 2 && incidenceId != 3 && incidenceId != 4 && 
+            incidenceId != 7
+         ) {
             return res.status(200).json({ msg: 'Se ha guardado correctamente la incidencia', callCreate, calls });
         }
-        if (incidenceId == 1) {
+        if (incidenceId == 1 ||incidenceId == 2 || incidenceId == 3  ||incidenceId == 4  ) {
             return res.status(200).json({ msg: 'Se ha empezado la encuesta', callCreate, calls });
         }
-        if (incidenceId == 3) {
+        if (incidenceId == 7) {
             return res.status(200).json({ msg: 'Se ha reprogramado la llamada', callCreate, rescheduled, calls });
         }
     } catch (error) {
@@ -95,7 +140,7 @@ const createCall = async (req, res) => {
         return res.status(500).json({ error: 'Error al registrar la llamada' });
     }
 };
-const listIncidents = async (req,res)=>{
+const listIncidents = async (req, res) => {
     try {
         const incidents = await Incidence.findAll();
         res.status(200).json({ incidents });
@@ -127,20 +172,20 @@ const listCallsByCompany = async (req, res) => {
         res.status(500).json({ error: 'Error al listar las llamadas' });
     }
 };
-const deleteCall = async (req,res)=>{
-    try{
-        const {companyId, callId} = req.params;
-        
+const deleteCall = async (req, res) => {
+    try {
+        const { companyId, callId } = req.params;
+
         if (!companyId) {
             return res.status(400).json({ error: 'Falta el ID de la compañía' });
         }
         console.log(companyId, callId)
-        const call = await Call.findOne({ where: { id:callId } })
+        const call = await Call.findOne({ where: { id: callId } })
 
         if (!call) {
             return res.status(400).json({ error: 'La llamada no existe' });
         }
-        const deleted =  await call.destroy()
+        const deleted = await call.destroy()
         console.log(`Registros eliminados: ${deleted}`);
 
         const calls = await Call.findAll({
@@ -154,35 +199,35 @@ const deleteCall = async (req,res)=>{
         });
 
         res.status(200).json({ msg: 'Llamada eliminada correctamente', calls })
-    } catch(error){
+    } catch (error) {
         res.status(500).json({ error: 'Error al eliminar al usuario' });
     }
 }
 
-const  listRescheduledByUserId = async(req,res)=>{
+const listRescheduledByUserId = async (req, res) => {
     try {
-        const {userId} = req.params;  
+        const { userId } = req.params;
         // Obtener las reschedulaciones filtrando por el assignedId de las compañías asociadas al usuario
         const rescheduleds = await Rescheduled.findAll({
-          include: [
-            {
-              model: Call,
-              include: {
-                model: Company,
-                where: {
-                  assignedId: userId  // Filtrar las compañías por assignedId del usuario
-                },
-                required: true  // Aseguramos que la relación de la compañía exista
-              },
-              required: true  // Aseguramos que la relación de la llamada exista
-            }
-          ]
+            include: [
+                {
+                    model: Call,
+                    include: {
+                        model: Company,
+                        where: {
+                            assignedId: userId  // Filtrar las compañías por assignedId del usuario
+                        },
+                        required: true  // Aseguramos que la relación de la compañía exista
+                    },
+                    required: true  // Aseguramos que la relación de la llamada exista
+                }
+            ]
         });
-    
+
         res.status(200).json({ rescheduleds })
-      } catch (error) {
+    } catch (error) {
         console.error('Error al obtener las reprogramaciones:', error);
-      }
+    }
 
 }
 

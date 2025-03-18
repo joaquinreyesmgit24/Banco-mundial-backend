@@ -1,6 +1,6 @@
 import express from 'express'
 import multer from 'multer';
-import { register, logout, authenticate, listUsers, updateUser,deleteUser, listRoles } from '../controllers/userController.js'
+import { register, logout, authenticate, listUsers, updateUser,deleteUser, listRoles } from '../controllers/UserController.js'
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router()

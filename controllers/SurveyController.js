@@ -46,6 +46,12 @@ const createSurvey = async (req, res) => {
             companyId: companyId ? parseInt(companyId) : null,
             status: 'Confirmada'
         };
+        if(selectedMainStatus==2){
+            surveyData.status = 'Incompleta';
+        }
+        if(selectedMainStatus==3 && selectedSubStatus){
+            surveyData.status = 'Rechazada';
+        }
 
         // Asignación del eligibilityCode
         let eligibilityCode = "";
@@ -113,5 +119,17 @@ const createSurvey = async (req, res) => {
     }
 };
 
+const listSurveys = async (req, res) => {
+    try {
+        const surveys = await Survey.findAll({
+            include: [{
+                model: Company,
+            }]
+        });
+        res.status(200).json({ surveys });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al listar los tamaños de la muestra' });
+    }
+}
 
-export { createSurvey };
+export { createSurvey, listSurveys };
