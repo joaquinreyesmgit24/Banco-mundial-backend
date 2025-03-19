@@ -93,7 +93,7 @@ const createCompany = async (req, res) => {
             emailAddress:emailAddress,
             sampleSectorId:sampleSectorId,
             sampleSizeId:sampleSizeId,
-            panelI:panelId,
+            panelId:panelId,
             countryId:1,
             web:web,
             regionId:regionId,
