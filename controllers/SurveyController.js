@@ -8,7 +8,16 @@ const createSurvey = async (req, res) => {
         const {
             Q_S10, Q_S8, Q_S9, Q_S4, Q_S7, Q_A7, Q_A7A, Q_A7B, Q_A11, Q_A7C,
             Q_A7D_address, Q_A7D_estab_name, Q_A9, Q_S12_date, Q_S12_hour,
-            Q_S12_inter_name, Q_S12_inter_cargo, companyId, selectedMainStatus, selectedSubStatus
+            Q_S12_inter_name, Q_S12_inter_cargo, companyId, selectedMainStatus, selectedSubStatus,
+            companyNameUpdate,
+            companyFloorNumberUpdate,
+            companyStreetUpdate,
+            companyCityUpdate,
+            companyStateUpdate,
+            companyFaxNumberUpdate,
+            companyEmailAddressUpdate,
+            companyPhoneNumberOneUpdate,
+            companyPhoneNumberSecondUpdate
         } = req.body;
 
         const company = await Company.findByPk(companyId, {
@@ -24,6 +33,35 @@ const createSurvey = async (req, res) => {
         if (!company) {
             return res.status(404).json({ msg: 'Compañía no encontrada' });
         }
+        if(companyNameUpdate){
+            company.name = companyNameUpdate
+        }
+        if(companyFloorNumberUpdate){
+            company.floorNumber= companyFloorNumberUpdate
+        }
+        if(companyStreetUpdate){
+            company.street= companyFloorNumberUpdate
+        }
+        if(companyCityUpdate){
+            company.city= companyCityUpdate
+        }
+        if(companyStateUpdate){
+            company.state= companyStateUpdate
+        }
+        if(companyFaxNumberUpdate){
+            company.faxNumber= companyFaxNumberUpdate
+        }
+        if(companyEmailAddressUpdate){
+            company.emailAddress= companyEmailAddressUpdate
+        }
+        if(companyPhoneNumberOneUpdate){
+            company.phoneNumberOne= companyPhoneNumberOneUpdate
+        }
+        if(companyPhoneNumberSecondUpdate){
+            company.phoneNumberSecond= companyPhoneNumberSecondUpdate
+        }
+
+        await company.save();
 
         const surveyData = {
             Q_S10: Q_S10 ? parseInt(Q_S10) : null,
@@ -96,7 +134,16 @@ const createSurvey = async (req, res) => {
             faxNumber: company.faxNumber,
             emailAddress: company.emailAddress,
             web: company.web,
-            companyId: company.id
+            companyId: company.id,
+            // companyNameUpdate : company.companyNameUpdate || "",
+            // companyFloorNumberUpdate:  company.companyFloorNumberUpdate ||"",
+            // companyStreetUpdate: company.companyStreetUpdate|| "",
+            // companyCityUpdate: company.companyCityUpdate || "",
+            // companyStateUpdate: company.companyStateUpdate || "",
+            // companyFaxNumberUpdate: company.companyFaxNumberUpdate ||"",
+            // companyEmailAddressUpdate:company.companyEmailAddressUpdate || "",
+            // companyPhoneNumberOneUpdate:company.companyPhoneNumberOneUpdate || "",
+            // companyPhoneNumberSecondUpdate:company.companyEmailAddressUpdate || "",
         };
         if (selectedMainStatus) {
             reportData.statusCode = selectedMainStatus;
