@@ -33,19 +33,17 @@ const createCompany = async (req, res) => {
         await check('rut').notEmpty().withMessage('El rut de la empresa no puede estar vacio').run(req)
         await check('name').notEmpty().withMessage('El nombre de la empresa no puede estar vacio').run(req)
         await check('sampleLocation').notEmpty().withMessage('La ubicación de la muestra no pueda estar vacia').run(req)
-        await check('floorNumber').notEmpty().withMessage('El número de casa/piso/puerta de la empresa no puede ir vacio').run(req)
+        await check('floorNumber').notEmpty().withMessage('El número de casa/piso/puerta de la empresa no puede ir vacio').isInt().withMessage('El número de casa/piso/puerta de la empresa debe ser un número entero').run(req)
         await check('street').notEmpty().withMessage('La calle de la empresa no puede ir vacio').run(req)
         await check('city').notEmpty().withMessage('La ciudad de la empresa no puede ir vacio').run(req)
         await check('state').notEmpty().withMessage('El estado de la empresa no puede ir vacio').run(req)
-        await check('phoneNumberOne').notEmpty().withMessage('El teléfono uno de la empresa no puede ir vacio').run(req)
-        await check('numberPhoneCallsOne').notEmpty().withMessage('El número de llamadas del teléfono 1 no puede ir vacio').run(req)
+        await check('phoneNumberOne').notEmpty().withMessage('El teléfono uno de la empresa no puede ir vacio').isInt().withMessage('El teléfono uno de la empresa debe ser un número entero').run(req)
+        await check('numberPhoneCallsOne').notEmpty().withMessage('El número de llamadas del teléfono uno no puede ir vacio').isInt().withMessage('El número de llamadas del teléfono uno debe ser un número entero').run(req)
         if(phoneNumberSecond){
-            await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono 2 no puede ir vacio').run(req)
+            await check('phoneNumberSecond').isInt().withMessage('El teléfono dos de la empresa debe ser un número entero').run(req)
+            await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono dos no puede ir vacio').isInt().withMessage('El número de llamadas del teléfono dos debe ser un número entero').run(req)
         }
-        await check('zipCode').notEmpty().withMessage('El código postal no puede ir vacio').run(req)
-        await check('faxNumber').notEmpty().withMessage('El número de fax no puede ir vacio').run(req)
-        await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').run(req)
-        await check('emailAddress').notEmpty().withMessage('El correo de la empresa no puede ir vacio').run(req)
+        await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').isInt().withMessage('El número de preferencia debe ser un número entero').run(req)
         let result = validationResult(req)
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() })
@@ -79,16 +77,16 @@ const createCompany = async (req, res) => {
             rut:rut,
             name: name,
             sampleLocation:sampleLocation,
-            floorNumber:floorNumber,
+            floorNumber:floorNumber || null,
             street:street,
             city:city,
             state:state,
             phoneNumberOne:phoneNumberOne,
             numberPhoneCallsOne:numberPhoneCallsOne,
-            phoneNumberSecond:phoneNumberSecond,
-            numberPhoneCallsSecond:numberPhoneCallsSecond,
-            zipCode:zipCode,
-            faxNumber:faxNumber,
+            phoneNumberSecond:phoneNumberSecond || null,
+            numberPhoneCallsSecond:numberPhoneCallsSecond || null,
+            zipCode:zipCode || null,
+            faxNumber:faxNumber|| null,
             preferenceNumber:preferenceNumber,
             emailAddress:emailAddress,
             sampleSectorId:sampleSectorId,
@@ -155,16 +153,16 @@ const uploadCompanies = async (req, res) => {
                 rut: row[headers.indexOf('rut')],
                 name: row[headers.indexOf('name')],
                 sampleLocation: row[headers.indexOf('sampleLocation')],
-                floorNumber: row[headers.indexOf('floorNumber')],
+                floorNumber: row[headers.indexOf('floorNumber')] || null,
                 street: row[headers.indexOf('street')],
                 city: row[headers.indexOf('city')],
                 state: row[headers.indexOf('state')],
                 phoneNumberOne: row[headers.indexOf('phoneNumberOne')],
                 numberPhoneCallsOne: row[headers.indexOf('numberPhoneCallsOne')],
-                phoneNumberSecond: row[headers.indexOf('phoneNumberSecond')],
-                numberPhoneCallsSecond: row[headers.indexOf('numberPhoneCallsSecond')],
-                zipCode: row[headers.indexOf('zipCode')],
-                faxNumber: row[headers.indexOf('faxNumber')],
+                phoneNumberSecond: row[headers.indexOf('phoneNumberSecond')] || null,
+                numberPhoneCallsSecond: row[headers.indexOf('numberPhoneCallsSecond')] || null,
+                zipCode: row[headers.indexOf('zipCode')] || null,
+                faxNumber: row[headers.indexOf('faxNumber')] || null,
                 use: false,
                 preferenceNumber: row[headers.indexOf('preferenceNumber')],
                 emailAddress: row[headers.indexOf('emailAddress')],
@@ -186,16 +184,16 @@ const uploadCompanies = async (req, res) => {
             await check('rut').notEmpty().withMessage('El rut de la empresa no puede estar vacío').run({ body: company });
             await check('name').notEmpty().withMessage('El nombre de la empresa no puede estar vacío').run({ body: company });
             await check('sampleLocation').notEmpty().withMessage('La ubicación de la muestra no puede estar vacía').run({ body: company });
-            await check('floorNumber').notEmpty().withMessage('El número de casa/piso/puerta no puede estar vacío').run({ body: company });
+            await check('floorNumber').notEmpty().withMessage('El número de casa/piso/puerta no puede estar vacío').isInt().withMessage('El número de casa/piso/puerta de la empresa debe ser un número entero').run({ body: company });
             await check('street').notEmpty().withMessage('La calle no puede estar vacía').run({ body: company });
             await check('city').notEmpty().withMessage('La ciudad no puede estar vacía').run({ body: company });
             await check('state').notEmpty().withMessage('El estado no puede estar vacío').run({ body: company });
-            await check('phoneNumberOne').notEmpty().withMessage('El teléfono no puede estar vacío').run({ body: company });
+            await check('phoneNumberOne').notEmpty().withMessage('El teléfono uno de la empresa no puede ir vacio').isInt().withMessage('El teléfono uno de la empresa debe ser un número entero').run({ body: company });
             if(company.phoneNumberSecond){
-                await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono 2 no puede ir vacio').run(req)
+                await check('phoneNumberSecond').isInt().withMessage('El teléfono dos de la empresa debe ser un número entero').run({ body: company})
+                await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono dos no puede ir vacio').isInt().withMessage('El número de llamadas del teléfono dos debe ser un número entero').run({ body: company})
             }
-            await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede estar vacío').run({ body: company });
-            await check('emailAddress').notEmpty().withMessage('El correo electrónico no puede estar vacío').run({ body: company });
+            await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede estar vacío').isInt().withMessage('El número de preferencia debe ser un número entero').run({ body: company });
 
             // Verificar si las validaciones no pasaron
             const result = validationResult({ body: company });
@@ -249,20 +247,18 @@ const updateCompany = async (req, res) => {
         await check('rut').notEmpty().withMessage('El rut de la empresa no puede estar vacio').run(req)
         await check('name').notEmpty().withMessage('El nombre de la empresa no puede estar vacio').run(req)
         await check('sampleLocation').notEmpty().withMessage('La ubicación de la muestra no pueda estar vacia').run(req)
-        await check('floorNumber').notEmpty().withMessage('El número de casa/piso/puerta de la empresa no puede ir vacio').run(req)
+        await check('floorNumber').notEmpty().withMessage('El número de casa/piso/puerta de la empresa no puede ir vacio').isInt().withMessage('El número de casa/piso/puerta de la empresa debe ser un número entero').run(req)
         await check('street').notEmpty().withMessage('La calle de la empresa no puede ir vacio').run(req)
         await check('city').notEmpty().withMessage('La ciudad de la empresa no puede ir vacio').run(req)
         await check('state').notEmpty().withMessage('El estado de la empresa no puede ir vacio').run(req)
-        await check('phoneNumberOne').notEmpty().withMessage('El teléfono uno de la empresa no puede ir vacio').run(req)
-        await check('numberPhoneCallsOne').notEmpty().withMessage('El número de llamadas del teléfono 1 no puede ir vacio').run(req)
+        await check('phoneNumberOne').notEmpty().withMessage('El teléfono uno de la empresa no puede ir vacio').isInt().withMessage('El teléfono uno de la empresa debe ser un número entero').run(req)
+        await check('numberPhoneCallsOne').notEmpty().withMessage('El número de llamadas del teléfono uno no puede ir vacio').isInt().withMessage('El número de llamadas del teléfono uno debe ser un número entero').run(req)
         if(phoneNumberSecond){
-            await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono 2 no puede ir vacio').run(req)
+            await check('phoneNumberSecond').isInt().withMessage('El teléfono dos de la empresa debe ser un número entero').run(req)
+            await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono 2 no puede ir vacio').isInt().withMessage('El número de llamadas del teléfono 2 debe ser un número entero').run(req)
         }
-        await check('zipCode').notEmpty().withMessage('El código postal no puede ir vacio').run(req)
-        await check('faxNumber').notEmpty().withMessage('El número de fax no puede ir vacio').run(req)
-        await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').run(req)
-        await check('emailAddress').notEmpty().withMessage('El correo de la empresa no puede ir vacio').run(req)
-       
+        await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').isInt().withMessage('El número de preferencia de la empresa debe ser un número entero').run(req)
+
         let result = validationResult(req)
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() })
@@ -296,10 +292,10 @@ const updateCompany = async (req, res) => {
         company.state = state
         company.phoneNumberOne = phoneNumberOne
         company.numberPhoneCallsOne= numberPhoneCallsOne
-        company.phoneNumberSecond = phoneNumberSecond
-        company.numberPhoneCallsSecond = numberPhoneCallsSecond
-        company.zipCode = zipCode
-        company.faxNumber = faxNumber
+        company.phoneNumberSecond = phoneNumberSecond || null
+        company.numberPhoneCallsSecond = numberPhoneCallsSecond || null
+        company.zipCode = zipCode || null
+        company.faxNumber = faxNumber || null
         company.preferenceNumber = preferenceNumber
         company.emailAddress = emailAddress
         company.sampleSectorId = sampleSectorId

@@ -33,6 +33,16 @@ const createSurvey = async (req, res) => {
         if (!company) {
             return res.status(404).json({ msg: 'Compañía no encontrada' });
         }
+
+        // Validar que los números de teléfono no sean iguales (si ambos están presentes)
+        if (
+            companyPhoneNumberOneUpdate &&
+            companyPhoneNumberSecondUpdate &&
+            companyPhoneNumberOneUpdate === companyPhoneNumberSecondUpdate
+        ) {
+            return res.status(400).json({ msg: 'Los números de teléfono no pueden ser iguales' });
+        }
+
         if(companyNameUpdate){
             company.name = companyNameUpdate
         }
@@ -121,29 +131,29 @@ const createSurvey = async (req, res) => {
             panelName: company.panel.description,
             panelCode: company.panel.code,
             eligibilityCode,
-            statusCode: "",
-            rejectionCode: "",
+            statusCode: null,
+            rejectionCode:  null,
             companyName: company.name,
-            locality: "",
+            locality: null,
             address: company.street,
-            zipCode: company.zipCode,
-            contactPerson: "",
-            contactPosition: "",
+            zipCode: company.zipCode || null,
+            contactPerson: Q_S12_inter_name,
+            contactPosition: Q_S12_inter_cargo,
             phoneNumberOne: company.phoneNumberOne,
-            phoneNumberSecond: company.phoneNumberSecond || "",
-            faxNumber: company.faxNumber,
+            phoneNumberSecond: company.phoneNumberSecond || null,
+            faxNumber: company.faxNumber || null,
             emailAddress: company.emailAddress,
-            web: company.web,
+            web: company.web || null,
             companyId: company.id,
-            companyNameUpdate : companyNameUpdate || "",
-            companyFloorNumberUpdate:  companyFloorNumberUpdate ||"",
-            companyStreetUpdate: companyStreetUpdate || "",
-            companyCityUpdate: companyCityUpdate || "",
-            companyStateUpdate: companyStateUpdate|| "",
-            companyFaxNumberUpdate: companyFaxNumberUpdate ||"",
-            companyEmailAddressUpdate:companyEmailAddressUpdate || "",
-            companyPhoneNumberOneUpdate:companyPhoneNumberOneUpdate || "",
-            companyPhoneNumberSecondUpdate:companyPhoneNumberSecondUpdate|| "",
+            companyNameUpdate : companyNameUpdate || null,
+            companyFloorNumberUpdate:  companyFloorNumberUpdate || null,
+            companyStreetUpdate: companyStreetUpdate || null,
+            companyCityUpdate: companyCityUpdate || null,
+            companyStateUpdate: companyStateUpdate|| null,
+            companyFaxNumberUpdate: companyFaxNumberUpdate || null,
+            companyEmailAddressUpdate:companyEmailAddressUpdate || null,
+            companyPhoneNumberOneUpdate:companyPhoneNumberOneUpdate || null,
+            companyPhoneNumberSecondUpdate:companyPhoneNumberSecondUpdate|| null,
         };
         if (selectedMainStatus) {
             reportData.statusCode = selectedMainStatus;

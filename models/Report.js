@@ -48,11 +48,11 @@ const Report = db.define('reports', {
     },
     statusCode: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     rejectionCode: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     companyName: {
         type: DataTypes.STRING,
@@ -60,7 +60,7 @@ const Report = db.define('reports', {
     },
     locality: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     address: {
         type: DataTypes.STRING,
@@ -68,7 +68,7 @@ const Report = db.define('reports', {
     },
     zipCode: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     contactPerson: {
         type: DataTypes.STRING,
@@ -84,19 +84,19 @@ const Report = db.define('reports', {
     },
     phoneNumberSecond: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: true
     },
     faxNumber: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: true
     },
     emailAddress: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     web: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     companyNameUpdate: {
         type: DataTypes.STRING,

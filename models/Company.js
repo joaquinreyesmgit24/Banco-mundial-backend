@@ -61,7 +61,7 @@ const Company = db.define('companies',{
     },
     zipCode:{
         type:DataTypes.STRING,
-        allowNull:false 
+        allowNull:true 
     },
     faxNumber:{
         type:DataTypes.INTEGER,
@@ -73,7 +73,7 @@ const Company = db.define('companies',{
     },
     emailAddress:{
         type:DataTypes.STRING,
-        allowNull:false
+        allowNull:true
     },
     web:{
         type:DataTypes.STRING,
