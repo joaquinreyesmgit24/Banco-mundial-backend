@@ -42,6 +42,11 @@ const createCompany = async (req, res) => {
         if(phoneNumberSecond){
             await check('phoneNumberSecond').isInt().withMessage('El teléfono dos de la empresa debe ser un número entero').run(req)
             await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono dos no puede ir vacio').isInt().withMessage('El número de llamadas del teléfono dos debe ser un número entero').run(req)
+        
+                // Validar que los números de teléfono no sean iguales
+            if (phoneNumberOne === phoneNumberSecond) {
+                return res.status(400).json({ error: 'El teléfono uno no puede ser igual al teléfono dos' });
+            }
         }
         await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').isInt().withMessage('El número de preferencia debe ser un número entero').run(req)
         let result = validationResult(req)
@@ -169,6 +174,7 @@ const uploadCompanies = async (req, res) => {
                 sampleSectorId: row[headers.indexOf('sampleSectorId')],
                 sampleSizeId: row[headers.indexOf('sampleSizeId')],
                 panelId: row[headers.indexOf('panelId')],
+                countryId: row[headers.indexOf('countryId')],
                 regionId: row[headers.indexOf('regionId')],
                 web: row[headers.indexOf('web')],
             };
@@ -189,16 +195,66 @@ const uploadCompanies = async (req, res) => {
             await check('city').notEmpty().withMessage('La ciudad no puede estar vacía').run({ body: company });
             await check('state').notEmpty().withMessage('El estado no puede estar vacío').run({ body: company });
             await check('phoneNumberOne').notEmpty().withMessage('El teléfono uno de la empresa no puede ir vacio').isInt().withMessage('El teléfono uno de la empresa debe ser un número entero').run({ body: company });
-            if(company.phoneNumberSecond){
-                await check('phoneNumberSecond').isInt().withMessage('El teléfono dos de la empresa debe ser un número entero').run({ body: company})
-                await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono dos no puede ir vacio').isInt().withMessage('El número de llamadas del teléfono dos debe ser un número entero').run({ body: company})
+            if (company.phoneNumberSecond) {
+                await check('phoneNumberSecond').isInt().withMessage('El teléfono dos de la empresa debe ser un número entero').run({ body: company });
+                await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono dos no puede ir vacio').isInt().withMessage('El número de llamadas del teléfono dos debe ser un número entero').run({ body: company });
+                // Verificar si los números de teléfono son iguales
+                if (company.phoneNumberOne === company.phoneNumberSecond) {
+                    errors.push({
+                        company,
+                        errors: [{ msg: 'El teléfono uno no puede ser igual al teléfono dos' }]
+                    });
+                }
             }
             await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede estar vacío').isInt().withMessage('El número de preferencia debe ser un número entero').run({ body: company });
+
+            // Validaciones adicionales
+            if (!company.sampleSectorId) {
+                errors.push({
+                    company,
+                    errors: [{ msg: 'Debe seleccionar un sector de la muestra válido' }]
+                });
+            }
+            if (!company.sampleSizeId) {
+                errors.push({
+                    company,
+                    errors: [{ msg: 'Debe seleccionar un tamaño de la muestra válido' }]
+                });
+            }
+            if (!company.panelId) {
+                errors.push({
+                    company,
+                    errors: [{ msg: 'Debe seleccionar un panel válido' }]
+                });
+            }
+            if (!company.regionId) {
+                errors.push({
+                    company,
+                    errors: [{ msg: 'Debe seleccionar una región válida' }]
+                });
+            }
 
             // Verificar si las validaciones no pasaron
             const result = validationResult({ body: company });
             if (!result.isEmpty()) {
                 errors.push({ company, errors: result.array() });
+            }
+
+            // Comprobar si la empresa ya existe
+            const companyExists = await Company.findOne({
+                where: {
+                    [Sequelize.Op.or]: [
+                        { code: company.code },
+                        { rut: company.rut }
+                    ]
+                }
+            });
+
+            if (companyExists) {
+                errors.push({
+                    company,
+                    errors: [{ msg: 'La empresa ya existe' }]
+                });
             }
         }
 
@@ -256,6 +312,10 @@ const updateCompany = async (req, res) => {
         if(phoneNumberSecond){
             await check('phoneNumberSecond').isInt().withMessage('El teléfono dos de la empresa debe ser un número entero').run(req)
             await check('numberPhoneCallsSecond').notEmpty().withMessage('El número de llamadas del teléfono 2 no puede ir vacio').isInt().withMessage('El número de llamadas del teléfono 2 debe ser un número entero').run(req)
+                // Validar que los números de teléfono no sean iguales
+            if (phoneNumberOne === phoneNumberSecond) {
+                return res.status(400).json({ error: 'El teléfono uno no puede ser igual al teléfono dos' });
+            }
         }
         await check('preferenceNumber').notEmpty().withMessage('El número de preferencia no puede ir vacio').isInt().withMessage('El número de preferencia de la empresa debe ser un número entero').run(req)
 

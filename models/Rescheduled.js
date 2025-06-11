@@ -10,6 +10,10 @@ const Rescheduled = db.define('rescheduleds',{
         type:DataTypes.TIME,
         allowNull:false
     },
+    status:{
+        type:DataTypes.BOOLEAN,
+        allowNull:false
+    }
 })
 
 export default Rescheduled

@@ -79,7 +79,7 @@ const createCall = async (req, res) => {
         // Si incidenceId es 3, crear también el registro en Rescheduled
 
         if (incidenceId == 7) {
-            const rescheduledCreate = await Rescheduled.create({ callId: callCreate.id, date: rescheduled.date, time: rescheduled.time }, { transaction: t });
+            const rescheduledCreate = await Rescheduled.create({ callId: callCreate.id, date: rescheduled.date,status:true, time: rescheduled.time }, { transaction: t });
         }
 
         if (![1, 2, 3, 4, 6, 7].includes(incidenceId)) {  
@@ -209,6 +209,9 @@ const listRescheduledByUserId = async (req, res) => {
         const { userId } = req.params;
         // Obtener las reschedulaciones filtrando por el assignedId de las compañías asociadas al usuario
         const rescheduleds = await Rescheduled.findAll({
+            where: {
+                status: true  // Filtrar las reprogramaciones por el status
+            },
             include: [
                 {
                     model: Call,
@@ -228,13 +231,35 @@ const listRescheduledByUserId = async (req, res) => {
     } catch (error) {
         console.error('Error al obtener las reprogramaciones:', error);
     }
-
 }
+const updateRescheduledStatus = async (req, res) => {
+    try {
+        const { rescheduledId } = req.params; // Obtén el ID de la reprogramación desde los parámetros de la URL
+        // Buscar la reprogramación por su ID y actualizar el estado a 'false'
+        const rescheduled = await Rescheduled.update(
+            { status: false }, // Establece el estado a 'false'
+            { where: { id: rescheduledId } } // Filtra por el ID de la reprogramación
+        );
+
+        if (rescheduled[0] === 0) { // Si no se encontró la reprogramación
+            return res.status(404)
+        }
+
+        res.status(200).json({ message: "No se puede contactar" });
+    } catch (error) {
+        console.error('Error al actualizar el estado de la reprogramación:', error);
+        res.status(500).json({ message: "Error interno del servidor" });
+    }
+}
+
+
+
 
 export {
     listIncidents,
     createCall,
     listCallsByCompany,
     deleteCall,
-    listRescheduledByUserId
+    listRescheduledByUserId,
+    updateRescheduledStatus
 }
