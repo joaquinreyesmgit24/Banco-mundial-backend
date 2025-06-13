@@ -2,7 +2,7 @@ import express from 'express'
 import multer from 'multer';
 
 import { createCompany, listCompanies,updateCompany,uploadCompanies,
-    listPanels, listSampleSectors, listSampleSizes, listRegions, deleteCompany} from '../controllers/companyController.js'
+    listPanels, listSampleSectors, listSampleSizes, listRegions, deleteCompany} from '../controllers/CompanyController.js'
 
 const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage()}).single('file');
