@@ -3,6 +3,8 @@ import { Call, Incidence, Company, Rescheduled, Sequelize, Report, SampleSize,Sa
 import db from '../config/db.js'
 import moment from 'moment'
 import { Op } from 'sequelize';
+import { DateTime } from 'luxon';
+
 
 const createCall = async (req, res) => {
     const t = await db.transaction(); // Iniciar transacción
@@ -12,6 +14,8 @@ const createCall = async (req, res) => {
 
 
         const { phone, comment, date, companyId, incidenceId, rescheduled } = req.body;
+
+        const utcDate = DateTime.fromFormat(date, "yyyy-MM-dd HH:mm:ss", { zone: "America/Santiago" }).toUTC().toISO();
 
         if (incidenceId == 7) {
             await check('rescheduled.date').notEmpty().withMessage('La fecha de reprogramación de llamado no puede ir vacía').run(req);
@@ -74,7 +78,7 @@ const createCall = async (req, res) => {
         }
 
         // Crear la llamada dentro de la transacción
-        const callCreate = await Call.create({ phone, comment, date, companyId, incidenceId }, { transaction: t });
+        const callCreate = await Call.create({ phone, comment, date:utcDate, companyId, incidenceId }, { transaction: t });
 
         // Si incidenceId es 3, crear también el registro en Rescheduled
 
